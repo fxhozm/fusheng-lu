@@ -919,7 +919,9 @@ function loadData() {
   // 先尝试从 GitHub 云端加载（公开的 data.json）
   var loaded = false;
   try {
-    var url = 'https://raw.githubusercontent.com/' + GH_OWNER + '/' + GH_REPO + '/' + GH_BRANCH + '/' + GH_PATH + '?t=' + Date.now();
+    var url = (location.protocol === 'file:')
+      ? 'https://raw.githubusercontent.com/' + GH_OWNER + '/' + GH_REPO + '/' + GH_BRANCH + '/' + GH_PATH + '?t=' + Date.now()
+      : GH_PATH + '?t=' + Date.now();
     var xhr = new XMLHttpRequest();
     xhr.open('GET', url, false);
     xhr.send(null);
