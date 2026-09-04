@@ -509,19 +509,64 @@
   }
 
   @media (max-width: 700px) {
+    .container { padding: 0 16px; }
+    nav .container { height: 48px; }
+    nav .logo { font-size: 14px; }
+    nav .nav-flower { display: none; }
+    nav .edit-toggle { font-size: 12px; padding: 3px 10px; }
+    #sync-status { display: none; }
+
     .home-hero { width: auto; padding: 10px 16px 14px; }
-    .home-hero h1 { font-size: 30px; letter-spacing: 2px; }
+    .home-hero .mark { font-size: 36px; }
+    .home-hero h1 { font-size: 28px; letter-spacing: 2px; }
+    .home-hero .motto { font-size: 14px; }
     .cats {
       width: auto; padding: 0 16px 20px;
       grid-template-columns: repeat(2, 1fr);
       grid-template-rows: none;
+      gap: 10px;
     }
-    .cat { grid-area: auto !important; }
+    .cat { grid-area: auto !important; padding: 12px 8px; }
+    .cat .icon { font-size: 20px; }
+    .cat h2 { font-size: 14px; }
+    .cat .sub { font-size: 11px; }
+    .cat .count { font-size: 10px; top: 4px; right: 4px; min-width: 18px; height: 18px; }
     .cat.blank { display: none; }
+
     .gallery { grid-template-columns: repeat(2, 1fr); }
     .photo.big { grid-column: span 2; grid-row: span 1; }
     .places { grid-template-columns: 1fr; }
-    .back-top { bottom: 16px; right: 16px; }
+
+    .sub-head { flex-wrap: wrap; gap: 8px; }
+    .sub-head h2 { font-size: 22px; }
+    .sub-head p { font-size: 13px; }
+
+    .notes { padding-left: 16px; }
+    .notes::before { left: -16px; }
+    .places { gap: 14px; }
+    .place { padding: 14px 16px; }
+
+    .innovate { margin-top: 24px; }
+    .innovate-title { letter-spacing: 3px; margin-bottom: 10px; }
+    .innovate-cards { flex-direction: column; align-items: stretch; gap: 10px; }
+    .innovate-card { padding: 12px 16px; }
+
+    .edit-form { padding: 14px; margin: 0 16px 12px; }
+    .edit-form input, .edit-form textarea, .edit-form select { font-size: 16px; }
+
+    footer { padding: 24px 0; font-size: 12px; }
+
+    .back-top { bottom: 16px; right: 16px; width: 36px; height: 36px; }
+  }
+
+  @media (max-width: 420px) {
+    .home-hero h1 { font-size: 24px; letter-spacing: 1px; }
+    .cats { gap: 8px; }
+    .cat { padding: 10px 6px; }
+    .cat h2 { font-size: 13px; }
+    .cat .sub { font-size: 10px; }
+    .gallery { gap: 6px; }
+    .sub-head h2 { font-size: 20px; }
   }
 </style>
 </head>
