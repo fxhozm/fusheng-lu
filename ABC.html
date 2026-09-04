@@ -943,6 +943,7 @@ function loadData() {
           var parsed = JSON.parse(xhr.responseText);
           if (isValidData(parsed)) {
             data = parsed;
+            mergeLocalAdditions();
             cloudSyncStatus('云同步');
             initNextId();
             updateCounts();
@@ -972,6 +973,31 @@ function loadData() {
       apiXhr.send(null);
     } catch (e) { }
   }
+}
+
+function mergeLocalAdditions() {
+  // 合并本地新增但云端没有的内容，防止未同步时刷新丢失
+  var saved = localStorage.getItem(STORAGE_KEY);
+  if (!saved) return;
+  try {
+    var local = JSON.parse(saved);
+    if (!isValidData(local)) return;
+    ['moments','notes','places','wishes','words'].forEach(function(k) {
+      var li = local[k] || [];
+      var ids = {};
+      (data[k] || []).forEach(function(x) { ids[x.id] = true; });
+      li.forEach(function(it) {
+        if (it.id && !ids[it.id]) { data[k] = data[k] || []; data[k].push(it); }
+      });
+    });
+    Object.keys(local.likes || {}).forEach(function(g) {
+      (local.likes[g] || []).forEach(function(tag) {
+        if (!tag.id) return;
+        var exists = (data.likes[g] || []).some(function(x) { return x.id === tag.id; });
+        if (!exists) { data.likes[g] = data.likes[g] || []; data.likes[g].push(tag); }
+      });
+    });
+  } catch (e) { }
 }
 
 function initNextId() {
