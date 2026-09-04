@@ -1446,10 +1446,10 @@ window.addMoment = function() {
     var fileInput = document.getElementById('f-m-file');
     if (fileInput && fileInput.files && fileInput.files[0]) {
       uploadImageToCloud(fileInput.files[0], function(path) {
-        if (path) { data.moments.push({ id: nextID('moments'), text: text, big: big, image: path }); saveData(); rerunCurrent(); }
+        if (path) { data.moments.unshift({ id: nextID('moments'), text: text, big: big, image: path }); saveData(); rerunCurrent(); }
       });
     } else {
-      data.moments.push({ id: nextID('moments'), text: text, big: big, image: image });
+      data.moments.unshift({ id: nextID('moments'), text: text, big: big, image: image });
       saveData(); rerunCurrent();
     }
   };
@@ -1520,7 +1520,7 @@ window.addLike = function() {
     var text = document.getElementById('f-l-text').value.trim();
     if (!text) { alert('请填写内容'); return; }
     if (!data.likes[group]) data.likes[group] = [];
-    data.likes[group].push({ id: nextID('likes'), text: text });
+    data.likes[group].unshift({ id: nextID('likes'), text: text });
     saveData(); rerunCurrent();
   };
   setTimeout(function() { var el = document.getElementById('f-l-text'); if (el) el.focus(); }, 50);
@@ -1556,7 +1556,7 @@ window.addPlace = function() {
     var when = document.getElementById('f-p-when').value.trim();
     var memo = document.getElementById('f-p-memo').value.trim();
     if (!name) { alert('请填写地点'); return; }
-    data.places.push({ id: nextID('places'), name: name, when: when, memo: memo });
+    data.places.unshift({ id: nextID('places'), name: name, when: when, memo: memo });
     saveData(); rerunCurrent();
   };
   setTimeout(function() { var el = document.getElementById('f-p-name'); if (el) el.focus(); }, 50);
@@ -1597,7 +1597,7 @@ window.addWish = function() {
   window.__saveWishAdd = function() {
     var text = document.getElementById('f-w-text').value.trim();
     if (!text) { alert('请填写心愿'); return; }
-    data.wishes.push({ id: nextID('wishes'), text: text, done: false });
+    data.wishes.unshift({ id: nextID('wishes'), text: text, done: false });
     saveData(); rerunCurrent();
   };
   setTimeout(function() { var el = document.getElementById('f-w-text'); if (el) el.focus(); }, 50);
@@ -1647,7 +1647,7 @@ window.addWord = function() {
     var text = document.getElementById('f-wd-text').value.trim();
     var when = document.getElementById('f-wd-when').value.trim();
     if (!text) { alert('请填写内容'); return; }
-    data.words.push({ id: nextID('words'), text: text, when: when });
+    data.words.unshift({ id: nextID('words'), text: text, when: when });
     saveData(); rerunCurrent();
   };
   setTimeout(function() { var el = document.getElementById('f-wd-text'); if (el) el.focus(); }, 50);
