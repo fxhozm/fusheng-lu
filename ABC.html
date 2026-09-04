@@ -902,6 +902,7 @@ var GH_BRANCH = 'master';
 var GH_TOKEN = window._GH_TOKEN || localStorage.getItem('_gh_token') || '';
 var cloudSHA = null;
 var syncTimer = null;
+var cloudRetrying = false;
 // === 云同步配置结束 ===
 
 var editMode = false;
@@ -1023,32 +1024,56 @@ function saveData() {
 function syncToCloud() {
   if (!GH_TOKEN) return;
   if (syncTimer) clearTimeout(syncTimer);
-  syncTimer = setTimeout(function() {
-    cloudSyncStatus('同步中…');
-    var content = btoa(unescape(encodeURIComponent(JSON.stringify(data, null, 2))));
-    var url = 'https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + GH_PATH;
-    var body = { message: 'sync data', content: content, branch: GH_BRANCH };
-    if (cloudSHA) body.sha = cloudSHA;
-    fetch(url, {
-      method: 'PUT',
-      headers: {
-        'Authorization': 'token ' + GH_TOKEN,
-        'Content-Type': 'application/json',
-        'Accept': 'application/vnd.github.v3+json'
-      },
-      body: JSON.stringify(body)
-    }).then(function(r) { return r.json(); })
-      .then(function(resp) {
-        if (resp.content && resp.content.sha) {
-          cloudSHA = resp.content.sha;
-          cloudSyncStatus('已同步');
-          setTimeout(function() { cloudSyncStatus(''); }, 2000);
-        } else {
-          cloudSyncStatus('同步失败');
-        }
-      })
-      .catch(function() { cloudSyncStatus('同步失败'); });
-  }, 800);
+  syncTimer = setTimeout(doCloudSync, 200);
+}
+
+function doCloudSync() {
+  cloudSyncStatus('同步中…');
+  var content = btoa(unescape(encodeURIComponent(JSON.stringify(data, null, 2))));
+  var url = 'https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + GH_PATH;
+  var body = { message: 'sync data', content: content, branch: GH_BRANCH };
+  if (cloudSHA) body.sha = cloudSHA;
+  fetch(url, {
+    method: 'PUT',
+    headers: {
+      'Authorization': 'token ' + GH_TOKEN,
+      'Content-Type': 'application/json',
+      'Accept': 'application/vnd.github.v3+json'
+    },
+    body: JSON.stringify(body)
+  }).then(function(r) { return r.json(); })
+    .then(function(resp) {
+      if (resp.content && resp.content.sha) {
+        cloudSHA = resp.content.sha;
+        cloudSyncStatus('已同步');
+        setTimeout(function() { cloudSyncStatus(''); }, 2000);
+      } else if (resp.message && /(409|422|sha)/i.test(resp.message)) {
+        cloudSyncStatus('同步冲突，重试…');
+        retryCloudSync();
+      } else {
+        cloudSyncStatus('同步失败');
+      }
+    })
+    .catch(function() { cloudSyncStatus('同步失败'); });
+}
+
+function retryCloudSync() {
+  if (cloudRetrying) return;
+  cloudRetrying = true;
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', 'https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + GH_PATH + '?ref=' + GH_BRANCH, true);
+  xhr.setRequestHeader('Authorization', 'token ' + GH_TOKEN);
+  xhr.onreadystatechange = function() {
+    if (xhr.readyState !== 4) return;
+    cloudRetrying = false;
+    if (xhr.status === 200) {
+      cloudSHA = JSON.parse(xhr.responseText).sha;
+      doCloudSync();
+    } else {
+      cloudSyncStatus('同步失败');
+    }
+  };
+  xhr.send(null);
 }
 
 function cloudSyncStatus(text) {
