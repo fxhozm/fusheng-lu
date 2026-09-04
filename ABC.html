@@ -1,0 +1,1451 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>浮生若梦 · 浮生录</title>
+<style>
+  :root {
+    --bg-deep: #08081a;
+    --bg-mid: #0f0f2e;
+    --bg-light: #1a1a3e;
+    --glass: rgba(255, 255, 255, 0.06);
+    --glass-border: rgba(255, 255, 255, 0.12);
+    --glass-hover: rgba(255, 255, 255, 0.1);
+    --text: #e8e6f0;
+    --text-dim: #8b8aa0;
+    --text-faint: #7676a0;
+    --accent: #8b5cf6;
+    --accent-glow: rgba(139, 92, 246, 0.5);
+    --accent-2: #5eead4;
+    --accent-2-glow: rgba(94, 234, 212, 0.4);
+    --accent-3: #f472b6;
+    --accent-3-glow: rgba(244, 114, 182, 0.4);
+    --star: #e2e8f0;
+    --star-dim: rgba(226, 232, 240, 0.4);
+    --danger: #f87171;
+    --radius: 16px;
+    --max-w: 920px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  ::selection { background: rgba(139, 92, 246, 0.3); color: #fff; }
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: var(--bg-deep); }
+  ::-webkit-scrollbar-thumb { background: rgba(139, 92, 246, 0.25); border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(139, 92, 246, 0.4); }
+  :focus-visible {
+    outline: 2px solid var(--accent-2);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+  a { text-underline-offset: 3px; }
+  body {
+    font-family: "Georgia", "Songti SC", "Noto Serif SC", serif;
+    background: var(--bg-deep);
+    color: var(--text);
+    line-height: 1.8;
+    min-height: 100vh;
+    overflow-x: hidden;
+    position: relative;
+  }
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 60% 40% at 20% 20%, rgba(139, 92, 246, 0.12) 0%, transparent 60%),
+      radial-gradient(ellipse 50% 30% at 80% 70%, rgba(94, 234, 212, 0.08) 0%, transparent 60%),
+      radial-gradient(ellipse 40% 30% at 50% 50%, rgba(244, 114, 182, 0.05) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+  #stars, #stars2, #stars3 {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+  }
+  #stars { z-index: 1; }
+  #stars2 { z-index: 2; }
+  #stars3 { z-index: 3; }
+  .container { max-width: var(--max-w); margin: 0 auto; padding: 0 24px; position: relative; z-index: 5; }
+  a { color: var(--accent-2); text-decoration: none; }
+  a:hover { color: var(--accent-2); text-decoration: underline; text-underline-offset: 3px; }
+  img { display: block; max-width: 100%; }
+
+  nav {
+    position: sticky; top: 0; z-index: 50;
+    background: rgba(8, 8, 26, 0.7);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--glass-border);
+  }
+  nav .container {
+    display: flex; align-items: center; justify-content: space-between;
+    height: 56px; position: relative;
+  }
+  nav .logo {
+    font-weight: 700; color: var(--accent); letter-spacing: 1px;
+    cursor: pointer;
+    transition: color .3s, letter-spacing .3s;
+  }
+  nav .logo:hover { color: var(--star); letter-spacing: 2px; }
+  nav .nav-flower {
+    position: absolute; left: 50%; top: 50%;
+    transform: translate(-50%, -50%);
+    color: var(--accent-2);
+    font-size: 20px;
+    pointer-events: none;
+    animation: pulse-glow 3s ease-in-out infinite;
+  }
+  @keyframes pulse-glow {
+    0%, 100% { opacity: 0.6; }
+    50% { opacity: 1; }
+  }
+  nav .back {
+    color: var(--text-dim); font-size: 14px; cursor: pointer;
+    display: none;
+    transition: color .3s;
+  }
+  nav .back:hover { color: var(--accent-2); }
+  nav .edit-toggle {
+    color: var(--text-dim); font-size: 14px; cursor: pointer;
+    padding: 4px 12px; border: 1px solid var(--glass-border); border-radius: 999px;
+    background: var(--glass);
+    transition: all .3s;
+  }
+  nav .edit-toggle:hover { color: var(--accent); border-color: var(--accent); box-shadow: 0 4px 16px rgba(0,0,0,0.3); }
+  nav .edit-toggle.on {
+    color: #fff; background: var(--accent); border-color: var(--accent);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+  }
+
+  .view { display: none; position: relative; z-index: 5; }
+  .view.active {
+    display: block;
+    animation: fade-in .6s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  @keyframes fade-in {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .home-center {
+    display: flex; flex-direction: column; align-items: center;
+  }
+  .home-hero {
+    text-align: center;
+    padding: 20px 0 20px;
+    width: 640px;
+  }
+  .home-hero .mark {
+    font-size: 48px;
+    color: var(--accent);
+    margin-bottom: 8px;
+    animation: float 4s ease-in-out infinite;
+  }
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-6px); }
+  }
+  .home-hero h1 {
+    font-size: 42px; font-weight: 800; margin-bottom: 10px;
+    letter-spacing: 4px;
+    color: var(--star);
+    text-shadow: 0 2px 12px rgba(0,0,0,0.4);
+  }
+  .home-hero .motto {
+    color: var(--text-dim); font-style: italic; font-size: 16px;
+  }
+  .home-hero .motto span {
+    color: var(--accent-3);
+    font-weight: 700;
+  }
+
+  .cats {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    grid-template-rows: repeat(4, auto);
+    gap: 8px;
+    padding: 0 0 30px;
+    width: 640px;
+  }
+  .cat {
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius);
+    padding: 12px 8px;
+    aspect-ratio: 1 / 1;
+    cursor: pointer;
+    text-align: center;
+    transition: transform .3s, border-color .3s, box-shadow .3s, background .3s;
+    position: relative;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+  .cat:hover {
+    transform: translateY(-6px);
+    border-color: var(--accent);
+    background: var(--glass-hover);
+    box-shadow: 0 12px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1);
+  }
+  .cat.blank {
+    background: transparent;
+    border: 1px dashed var(--glass-border);
+    cursor: default;
+  }
+  .cat.blank:hover {
+    transform: none;
+    border-color: var(--glass-border);
+    box-shadow: none;
+    background: transparent;
+  }
+  .cat .icon {
+    font-size: 24px; color: var(--accent-2); margin-bottom: 6px;
+    transition: transform .3s;
+  }
+  .cat:hover .icon { transform: scale(1.2); }
+  .cat h2 {
+    font-size: 15px; color: var(--text); margin-bottom: 3px;
+    font-weight: 700;
+  }
+  .cat .sub {
+    font-size: 11px; color: var(--text-dim);
+  }
+  .cat .count {
+    position: absolute; top: 6px; right: 6px;
+    font-size: 10px; color: var(--accent-2);
+    background: rgba(94, 234, 212, 0.1);
+    padding: 1px 7px; border-radius: 8px;
+    border: 1px solid rgba(94, 234, 212, 0.2);
+  }
+
+  .sub-head {
+    padding: 60px 0 24px;
+    border-bottom: 1px solid var(--glass-border);
+    margin-bottom: 30px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .sub-head h2 {
+    font-size: 28px; color: var(--accent); margin-bottom: 6px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .sub-head h2::before {
+    content: "✦"; color: var(--accent-2); font-size: 20px;
+  }
+  .sub-head p { color: var(--text-dim); font-size: 14px; }
+
+  .gallery {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+  .photo {
+    aspect-ratio: 1 / 1;
+    border-radius: var(--radius);
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-dim); font-size: 13px; text-align: center;
+    padding: 10px; transition: all .3s;
+    position: relative;
+    overflow: hidden;
+    backdrop-filter: blur(8px);
+  }
+  .photo img { width: 100%; height: 100%; object-fit: cover; border-radius: inherit; }
+  .photo:hover {
+    transform: scale(1.03);
+    border-color: var(--accent);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  }
+  .photo.big { grid-column: span 2; grid-row: span 2; }
+
+  .notes { position: relative; padding-left: 22px; }
+  .notes::before {
+    content: ""; position: absolute; left: 5px; top: 6px; bottom: 6px;
+    width: 1px; background: linear-gradient(to bottom, var(--accent-glow), var(--glass-border), transparent);
+  }
+  .note {
+    position: relative; padding-bottom: 28px;
+    transition: transform .3s;
+  }
+  .note:hover { transform: translateX(4px); }
+  .note::before {
+    content: ""; position: absolute; left: -22px; top: 7px;
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  }
+  .note .date { color: var(--accent-2); font-size: 13px; margin-bottom: 2px; font-weight: 600; }
+  .note .date .w { color: var(--text-dim); font-size: 12px; margin-left: 8px; }
+  .note p { color: var(--text); font-size: 15px; }
+
+  .likes { display: grid; gap: 24px; }
+  .like-row h3 {
+    font-size: 16px; color: var(--accent); margin-bottom: 10px;
+    font-weight: 700;
+  }
+  .like-row .tags { display: flex; flex-wrap: wrap; gap: 8px; }
+  .like-row .tag {
+    padding: 6px 14px; background: var(--glass);
+    border: 1px solid var(--glass-border); border-radius: 999px;
+    font-size: 13px; color: var(--text);
+    transition: all .3s;
+    backdrop-filter: blur(8px);
+  }
+  .like-row .tag:hover {
+    border-color: var(--accent-2);
+    box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+    transform: translateY(-2px);
+  }
+
+  .places { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+  .place {
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius); padding: 18px 20px;
+    transition: all .3s;
+    backdrop-filter: blur(8px);
+  }
+  .place:hover {
+    transform: translateY(-4px);
+    border-color: var(--accent);
+    box-shadow: 0 12px 40px rgba(0,0,0,0.4);
+  }
+  .place .name { font-size: 18px; color: var(--text); margin-bottom: 4px; font-weight: 700; }
+  .place .when { color: var(--accent-2); font-size: 13px; font-weight: 600; }
+  .place .memo { color: var(--text-dim); font-size: 13px; margin-top: 6px; }
+
+  .wishes { list-style: none; display: grid; gap: 10px; }
+  .wishes li {
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px; padding: 12px 16px;
+    display: flex; align-items: center; gap: 12px; font-size: 15px;
+    transition: all .3s;
+    backdrop-filter: blur(8px);
+  }
+  .wishes li:hover { border-color: var(--accent); box-shadow: 0 4px 24px rgba(0,0,0,0.4); }
+  .wishes li::before {
+    content: ""; width: 18px; height: 18px; border-radius: 4px;
+    border: 1.5px solid var(--accent);
+    transition: all .3s;
+    flex-shrink: 0;
+  }
+  .wishes li.done::before {
+    content: "✓";
+    background: var(--accent);
+    color: #fff;
+    font-size: 12px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .wishes li.done { color: var(--text-dim); }
+  .wishes li.done .txt { text-decoration: line-through; }
+  .wishes li .txt { flex: 1; }
+
+  .words-list { display: grid; gap: 16px; }
+  .words {
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius); padding: 24px 28px;
+    color: var(--text-dim); font-style: italic; position: relative;
+    transition: all .3s;
+    backdrop-filter: blur(8px);
+  }
+  .words:hover { border-color: var(--accent-3); box-shadow: 0 8px 32px rgba(0,0,0,0.4); }
+  .words::before {
+    content: "\201C"; font-size: 52px; color: var(--accent);
+    position: absolute; top: 0; left: 16px; line-height: 1;
+    opacity: 0.6;
+  }
+  .words p { padding-left: 26px; color: var(--text); }
+  .words .when { display: block; text-align: right; font-size: 12px; margin-top: 8px; color: var(--accent-3); }
+
+  footer {
+    padding: 32px 0; text-align: center;
+    color: var(--text-faint); font-size: 13px;
+    border-top: 1px solid var(--glass-border); margin-top: 40px;
+  }
+
+  .edit-bar { display: none; gap: 8px; align-items: center; }
+  body.edit-mode .edit-bar { display: flex; }
+  .btn {
+    font-family: inherit; font-size: 13px; cursor: pointer;
+    padding: 6px 14px; border-radius: 8px;
+    border: 1px solid var(--glass-border); background: var(--glass);
+    color: var(--text); transition: all .3s;
+  }
+  .btn:hover { border-color: var(--accent); color: var(--accent); box-shadow: 0 4px 16px rgba(0,0,0,0.3); }
+  .btn-primary {
+    background: var(--accent); color: #fff; border-color: var(--accent);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+  }
+  .btn-primary:hover { box-shadow: 0 6px 20px rgba(0,0,0,0.4); }
+  .btn-danger {
+    color: var(--danger); border-color: rgba(248, 113, 113, 0.3);
+  }
+  .btn-danger:hover { background: var(--danger); color: #fff; border-color: var(--danger); box-shadow: 0 4px 16px rgba(0,0,0,0.3); }
+
+  .item-actions {
+    position: absolute; top: 6px; right: 6px;
+    display: flex; gap: 4px; opacity: 0; transition: opacity .3s;
+    z-index: 5;
+  }
+  .photo:hover .item-actions,
+  .note:hover .item-actions,
+  .place:hover .item-actions,
+  .wishes li:hover .item-actions,
+  .words:hover .item-actions { opacity: 1; }
+  body.edit-mode .gallery .photo,
+  body.edit-mode .note,
+  body.edit-mode .place,
+  body.edit-mode .wishes li,
+  body.edit-mode .words { position: relative; }
+  body.edit-mode .item-actions { opacity: 1; }
+
+  .tag-actions { display: none; margin-left: 6px; gap: 4px; }
+  body.edit-mode .tag:hover .tag-actions { display: inline-flex; }
+  .tag-actions .btn {
+    padding: 0 5px; font-size: 11px; border-radius: 4px;
+    line-height: 1.4;
+  }
+
+  .edit-form {
+    background: var(--glass);
+    border: 1px solid var(--accent);
+    border-radius: var(--radius); padding: 16px;
+    margin-bottom: 12px; display: grid; gap: 10px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    backdrop-filter: blur(12px);
+  }
+  .edit-form label {
+    font-size: 13px; color: var(--text-dim); display: block; margin-bottom: 4px;
+  }
+  .edit-form input, .edit-form textarea, .edit-form select {
+    width: 100%; padding: 8px 12px;
+    border: 1px solid var(--glass-border); border-radius: 8px;
+    background: rgba(0,0,0,0.3); color: var(--text);
+    font-family: inherit; font-size: 14px;
+    outline: none; transition: border-color .3s;
+  }
+  .edit-form input:focus, .edit-form textarea:focus, .edit-form select:focus {
+    border-color: var(--accent);
+    box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+  }
+  .edit-form textarea { resize: vertical; min-height: 60px; }
+  .edit-form .form-actions { display: flex; gap: 8px; justify-content: flex-end; }
+
+  .empty {
+    text-align: center; padding: 60px 20px;
+    color: var(--text-faint); font-style: italic;
+  }
+  body.edit-mode .wishes li { cursor: pointer; }
+
+  .innovate {
+    margin-top: 40px; text-align: center;
+  }
+  .innovate-title {
+    color: var(--text-dim); font-size: 12px; letter-spacing: 4px; margin-bottom: 14px;
+  }
+  .innovate-cards {
+    display: flex; gap: 16px; justify-content: center; flex-wrap: wrap;
+  }
+  .innovate-card {
+    text-decoration: none;
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius);
+    padding: 16px 24px;
+    color: var(--text);
+    transition: all .3s;
+    display: flex; align-items: center; gap: 12px;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+  .innovate-card:hover {
+    border-color: var(--accent);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    transform: translateY(-4px);
+  }
+  .innovate-card:nth-child(2):hover {
+    border-color: var(--accent-3);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  }
+  .innovate-card .card-icon { font-size: 24px; }
+  .innovate-card .card-body { text-align: left; }
+  .innovate-card .card-title { font-size: 14px; font-weight: 600; }
+  .innovate-card .card-desc { font-size: 11px; color: var(--text-dim); }
+
+  .cat-enter {
+    animation: cat-enter .6s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  @keyframes cat-enter {
+    from { opacity: 0; transform: translateY(16px) scale(0.95); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  .back-top {
+    position: fixed; bottom: 24px; right: 24px;
+    width: 40px; height: 40px; border-radius: 50%;
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    color: var(--accent-2);
+    font-size: 18px; cursor: pointer; z-index: 40;
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; transition: all .3s;
+    pointer-events: none;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+  }
+  .back-top.show {
+    opacity: 1; pointer-events: auto;
+  }
+  .back-top:hover {
+    border-color: var(--accent);
+    box-shadow: 0 2px 16px rgba(0,0,0,0.3);
+    transform: translateY(-2px);
+  }
+
+  @media (max-width: 700px) {
+    .home-hero { width: auto; padding: 10px 16px 14px; }
+    .home-hero h1 { font-size: 30px; letter-spacing: 2px; }
+    .cats {
+      width: auto; padding: 0 16px 20px;
+      grid-template-columns: repeat(2, 1fr);
+      grid-template-rows: none;
+    }
+    .cat { grid-area: auto !important; }
+    .cat.blank { display: none; }
+    .gallery { grid-template-columns: repeat(2, 1fr); }
+    .photo.big { grid-column: span 2; grid-row: span 1; }
+    .places { grid-template-columns: 1fr; }
+    .back-top { bottom: 16px; right: 16px; }
+  }
+</style>
+</head>
+<body>
+
+<canvas id="stars"></canvas>
+<canvas id="stars2"></canvas>
+<canvas id="stars3"></canvas>
+
+<nav>
+  <div class="container">
+    <div class="logo" onclick="go('home')">浮生若梦</div>
+    <div class="nav-flower">✦</div>
+    <div style="display:flex;align-items:center;gap:12px;">
+      <div class="edit-bar">
+        <button class="btn" onclick="resetData()">↺ 重置</button>
+      </div>
+      <div class="edit-toggle" id="editToggle" onclick="toggleEdit()">✎ 编辑</div>
+      <div class="back" onclick="go('home')">← 返回首页</div>
+    </div>
+  </div>
+</nav>
+
+<div id="view-home" class="view active">
+  <div class="home-center">
+    <div class="home-hero">
+      <div class="mark">✦</div>
+      <h1>浮生录</h1>
+      <p class="motto">于寻常处，拾生活的 <span>微光</span></p>
+    </div>
+
+    <div class="cats">
+    <div class="cat" style="grid-area:1/2" onclick="go('moments')">
+      <div class="icon">✦</div>
+      <h2>生活瞬间</h2>
+      <div class="sub">照片里的日子</div>
+      <div class="count" id="count-moments">6</div>
+    </div>
+    <div class="cat" style="grid-area:1/4" onclick="go('notes')">
+      <div class="icon">✎</div>
+      <h2>随手记</h2>
+      <div class="sub">一日一小段</div>
+      <div class="count" id="count-notes">3</div>
+    </div>
+    <div class="cat" style="grid-area:2/1" onclick="go('likes')">
+      <div class="icon">♡</div>
+      <h2>喜欢的事物</h2>
+      <div class="sub">书 影 音 物</div>
+      <div class="count" id="count-likes">4</div>
+    </div>
+    <div class="cat blank" style="grid-area:2/2"></div>
+    <div class="cat" style="grid-area:2/3" onclick="go('places')">
+      <div class="icon">✈</div>
+      <h2>足迹</h2>
+      <div class="sub">去过的地方</div>
+      <div class="count" id="count-places">5</div>
+    </div>
+    <div class="cat blank" style="grid-area:2/4"></div>
+    <div class="cat" style="grid-area:2/5" onclick="go('wishes')">
+      <div class="icon">☀</div>
+      <h2>心愿单</h2>
+      <div class="sub">想做的事</div>
+      <div class="count" id="count-wishes">5</div>
+    </div>
+    <div class="cat blank" style="grid-area:3/2"></div>
+    <div class="cat blank" style="grid-area:3/3"></div>
+    <div class="cat blank" style="grid-area:3/4"></div>
+    <div class="cat" style="grid-area:4/3" onclick="go('words')">
+      <div class="icon">❝</div>
+      <h2>想说的话</h2>
+      <div class="sub">碎碎念</div>
+      <div class="count" id="count-words">2</div>
+    </div>
+  </div>
+
+    <div class="innovate">
+      <div class="innovate-title">✦ 创新探索 ✦</div>
+      <div class="innovate-cards">
+        <a href="time-river.html" class="innovate-card">
+          <span class="card-icon">🌊</span>
+          <div class="card-body">
+            <div class="card-title">时光长河</div>
+            <div class="card-desc">生命时间轴可视化</div>
+          </div>
+        </a>
+        <a href="mood-trajectory.html" class="innovate-card">
+          <span class="card-icon">🌈</span>
+          <div class="card-body">
+            <div class="card-title">心情轨迹</div>
+            <div class="card-desc">情绪波动可视化</div>
+          </div>
+        </a>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div id="view-moments" class="view">
+  <div class="container">
+    <div class="sub-head">
+      <div>
+        <h2>生活瞬间</h2>
+        <p>那些值得按下快门的时刻</p>
+      </div>
+      <div class="edit-bar">
+        <button class="btn btn-primary" onclick="addMoment()">+ 添加</button>
+      </div>
+    </div>
+    <div class="gallery" id="gallery"></div>
+  </div>
+</div>
+
+<div id="view-notes" class="view">
+  <div class="container">
+    <div class="sub-head">
+      <div>
+        <h2>随手记</h2>
+        <p>一日一小段，写给未来的自己</p>
+      </div>
+      <div class="edit-bar">
+        <button class="btn btn-primary" onclick="addNote()">+ 添加</button>
+      </div>
+    </div>
+    <div class="notes" id="notes"></div>
+  </div>
+</div>
+
+<div id="view-likes" class="view">
+  <div class="container">
+    <div class="sub-head">
+      <div>
+        <h2>喜欢的事物</h2>
+        <p>给心头好们留个位置</p>
+      </div>
+      <div class="edit-bar">
+        <button class="btn btn-primary" onclick="addLike()">+ 添加</button>
+      </div>
+    </div>
+    <div class="likes" id="likes"></div>
+  </div>
+</div>
+
+<div id="view-places" class="view">
+  <div class="container">
+    <div class="sub-head">
+      <div>
+        <h2>足迹</h2>
+        <p>走过的路，都算数</p>
+      </div>
+      <div class="edit-bar">
+        <button class="btn btn-primary" onclick="addPlace()">+ 添加</button>
+      </div>
+    </div>
+    <div class="places" id="places"></div>
+  </div>
+</div>
+
+<div id="view-wishes" class="view">
+  <div class="container">
+    <div class="sub-head">
+      <div>
+        <h2>心愿单</h2>
+        <p>想做的事，慢慢一件件去做</p>
+      </div>
+      <div class="edit-bar">
+        <button class="btn btn-primary" onclick="addWish()">+ 添加</button>
+      </div>
+    </div>
+    <ul class="wishes" id="wishes"></ul>
+  </div>
+</div>
+
+<div id="view-words" class="view">
+  <div class="container">
+    <div class="sub-head">
+      <div>
+        <h2>想说的话</h2>
+        <p>碎碎念，留给自己听</p>
+      </div>
+      <div class="edit-bar">
+        <button class="btn btn-primary" onclick="addWord()">+ 添加</button>
+      </div>
+    </div>
+    <div class="words-list" id="words"></div>
+  </div>
+</div>
+
+<div class="back-top" id="backTop" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</div>
+
+<footer>
+  <div class="container">© 2026 · 浮生若梦 · 一砖一瓦，慢慢搭起</div>
+</footer>
+
+<script>
+(function() {
+  var cans = ['stars', 'stars2', 'stars3'];
+  var sizes = [1, 1.8, 3];
+  var counts = [180, 100, 40];
+  var speeds = [0.3, 0.15, 0.06];
+  var starsArr = [];
+
+  cans.forEach(function(id, layer) {
+    var canvas = document.getElementById(id);
+    var ctx = canvas.getContext('2d');
+    starsArr[layer] = [];
+    function resize() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    resize();
+    window.addEventListener('resize', resize);
+
+    for (var i = 0; i < counts[layer]; i++) {
+      starsArr[layer].push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        r: Math.random() * sizes[layer] + 0.3,
+        a: Math.random() * 0.8 + 0.2,
+        da: (Math.random() * 0.02 + 0.005) * (Math.random() > 0.5 ? 1 : -1),
+        vy: Math.random() * speeds[layer] + 0.05,
+        vx: (Math.random() - 0.5) * 0.05
+      });
+    }
+
+    function animate() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      starsArr[layer].forEach(function(s) {
+        s.a += s.da;
+        if (s.a > 1 || s.a < 0.1) s.da = -s.da;
+        s.y += s.vy;
+        s.x += s.vx;
+        if (s.y > canvas.height) { s.y = 0; s.x = Math.random() * canvas.width; }
+        if (s.x > canvas.width) s.x = 0;
+        if (s.x < 0) s.x = canvas.width;
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(226, 232, 240, ' + s.a + ')';
+        ctx.fill();
+        if (s.r > 2) {
+          ctx.beginPath();
+          ctx.arc(s.x, s.y, s.r * 2, 0, Math.PI * 2);
+          ctx.fillStyle = 'rgba(139, 92, 246, ' + (s.a * 0.15) + ')';
+          ctx.fill();
+        }
+      });
+      requestAnimationFrame(animate);
+    }
+    animate();
+  });
+
+  var trail = [];
+  document.addEventListener('mousemove', function(e) {
+    if (trail.length > 20) trail.shift();
+    trail.push({ x: e.clientX, y: e.clientY, life: 1 });
+  });
+  function drawTrail() {
+    var c = document.getElementById('stars3');
+    var ctx = c.getContext('2d');
+    for (var i = 0; i < trail.length; i++) {
+      var t = trail[i];
+      t.life -= 0.04;
+      if (t.life > 0) {
+        ctx.beginPath();
+        ctx.arc(t.x, t.y, 1.5 * t.life, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(94, 234, 212, ' + (t.life * 0.6) + ')';
+        ctx.fill();
+      }
+    }
+    requestAnimationFrame(drawTrail);
+  }
+  drawTrail();
+})();
+
+var DEFAULTS = {
+  moments: [
+    { id: 1, text: '封面图\n某年某月某日', big: true },
+    { id: 2, text: '清晨的咖啡', big: false },
+    { id: 3, text: '窗台的光', big: false },
+    { id: 4, text: '街角的小店', big: false },
+    { id: 5, text: '傍晚的云', big: false },
+    { id: 6, text: '一张老照片', big: false }
+  ],
+  notes: [
+    { id: 1, date: '2026年8月24日', weather: '晴', text: '今天阳光很好，把晾了一冬的被子抱到阳台上晒，整个屋子都是太阳的味道。' },
+    { id: 2, date: '2026年8月20日', weather: '雨', text: '下午突然下雨，在便利店门口躲雨时遇到一只猫，它看了我一眼就走了。' },
+    { id: 3, date: '2026年8月15日', weather: '阴', text: '把旧日记翻出来看了一遍，那时候烦恼的事，现在一件都不记得了。' }
+  ],
+  likes: {
+    book: [{id:1,text:'《活着》'},{id:2,text:'《小王子》'},{id:3,text:'《人间词话》'}],
+    film: [{id:4,text:'《菊次郎的夏天》'},{id:5,text:'《小森林》'},{id:6,text:'《海街日记》'}],
+    music: [{id:7,text:'久石让'},{id:8,text:'陈绮贞'},{id:9,text:'民谣'}],
+    thing: [{id:10,text:'旧书'},{id:11,text:'手写信'},{id:12,text:'陶杯'},{id:13,text:'清晨的雨'}]
+  },
+  places: [
+    { id: 1, name: '大理', when: '2025 · 春', memo: '苍山下的风，把头发吹得很乱。' },
+    { id: 2, name: '苏州', when: '2024 · 秋', memo: '平江路的青石板，走了一遍又一遍。' },
+    { id: 3, name: '厦门', when: '2023 · 夏', memo: '海风咸咸的，鼓浪屿的猫比游客还多。' },
+    { id: 4, name: '黄山', when: '2022 · 冬', memo: '云海翻涌的那一刻，没人说话。' },
+    { id: 5, name: '老家的小院', when: '每年', memo: '无论走多远，都想念院子里那棵树。' }
+  ],
+  wishes: [
+    { id: 1, text: '学一门乐器', done: false },
+    { id: 2, text: '写一封寄不出的信', done: false },
+    { id: 3, text: '看一次海边日出', done: false },
+    { id: 4, text: '把旧相册整理成电子版', done: true },
+    { id: 5, text: '养一盆会开花的植物', done: false }
+  ],
+  words: [
+    { id: 1, text: '日子是慢慢过的，不必着急。今天的阳光、今天的雨、今天的一杯茶，都是只属于此刻的礼物。', when: '— 2026.08' },
+    { id: 2, text: '记录这件事本身，就已经是生活的一部分了。愿我能一直记得记录，也记得感受。', when: '— 2026.07' }
+  ]
+};
+
+var LIKES_GROUPS = [
+  { key: 'book', label: '书' },
+  { key: 'film', label: '影' },
+  { key: 'music', label: '音' },
+  { key: 'thing', label: '物' }
+];
+
+var STORAGE_KEY = 'fushengruomeng_data';
+var EDIT_KEY = 'fushengruomeng_edit';
+
+var editMode = false;
+var data = null;
+var nextId = {};
+
+function loadData() {
+  var saved = localStorage.getItem(STORAGE_KEY);
+  if (saved) {
+    try { data = JSON.parse(saved); } catch (e) { data = JSON.parse(JSON.stringify(DEFAULTS)); }
+  } else {
+    data = JSON.parse(JSON.stringify(DEFAULTS));
+  }
+  nextId = {};
+  ['moments','notes','places','wishes','words'].forEach(function(k) {
+    nextId[k] = (data[k] || []).reduce(function(m, it) { return Math.max(m, it.id || 0); }, 0) + 1;
+  });
+  var likesMax = 0;
+  Object.keys(data.likes || {}).forEach(function(k) {
+    (data.likes[k] || []).forEach(function(tag) {
+      if (tag.id) likesMax = Math.max(likesMax, tag.id);
+    });
+  });
+  nextId.likes = likesMax + 1;
+}
+
+function saveData() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  updateCounts();
+}
+
+function nextID(type) {
+  return nextId[type]++;
+}
+
+function go(name) {
+  document.querySelectorAll('.view').forEach(function(v) { v.classList.remove('active'); });
+  var target = document.getElementById('view-' + name);
+  if (target) target.classList.add('active');
+  document.querySelector('nav .back').style.display =
+    (name === 'home') ? 'none' : 'inline-block';
+  if (name === 'home') {
+    updateCounts();
+  } else {
+    renderView(name);
+  }
+  window.scrollTo(0, 0);
+}
+
+function renderView(name) {
+  if (name === 'moments') renderMoments();
+  else if (name === 'notes') renderNotes();
+  else if (name === 'likes') renderLikes();
+  else if (name === 'places') renderPlaces();
+  else if (name === 'wishes') renderWishes();
+  else if (name === 'words') renderWords();
+}
+
+function updateCounts() {
+  var counts = {
+    moments: data.moments.length,
+    notes: data.notes.length,
+    likes: Object.values(data.likes).reduce(function(s, arr) { return s + arr.length; }, 0),
+    places: data.places.length,
+    wishes: data.wishes.length,
+    words: data.words.length
+  };
+  Object.keys(counts).forEach(function(k) {
+    var el = document.getElementById('count-' + k);
+    if (el) el.textContent = counts[k];
+  });
+}
+
+function escapeHtml(s) {
+  var div = document.createElement('div');
+  div.appendChild(document.createTextNode(s));
+  return div.innerHTML;
+}
+
+function renderMoments() {
+  var el = document.getElementById('gallery');
+  if (!data.moments.length) {
+    el.innerHTML = '<div class="empty" style="grid-column:1/-1;">还没有记录，点击「+ 添加」开始吧</div>';
+    return;
+  }
+  var html = '';
+  data.moments.forEach(function(m) {
+    var cls = 'photo' + (m.big ? ' big' : '');
+    html += '<div class="' + cls + '">';
+    if (m.image) {
+      html += '<img src="' + escapeHtml(m.image) + '" alt="">';
+    } else {
+      html += escapeHtml(m.text.replace(/\n/g, '<br>'));
+    }
+    if (editMode) {
+      html += '<div class="item-actions">';
+      html += '<button class="btn" onclick="editMoment(' + m.id + ')">✎</button>';
+      html += '<button class="btn btn-danger" onclick="delMoment(' + m.id + ')">×</button>';
+      html += '</div>';
+    }
+    html += '</div>';
+  });
+  el.innerHTML = html;
+}
+
+function parseCNDate(s) {
+  var m = s.match(/(\d+)年(\d+)月(\d+)日/);
+  return m ? new Date(+m[1], +m[2] - 1, +m[3]).getTime() : 0;
+}
+
+function renderNotes() {
+  var el = document.getElementById('notes');
+  if (!data.notes.length) {
+    el.innerHTML = '<div class="empty">还没有记录，点击「+ 添加」开始吧</div>';
+    return;
+  }
+  var html = '';
+  var sorted = data.notes.slice().sort(function(a, b) {
+    return parseCNDate(b.date) - parseCNDate(a.date);
+  });
+  sorted.forEach(function(n) {
+    html += '<div class="note">';
+    html += '<div class="date">' + escapeHtml(n.date) + '<span class="w">' + escapeHtml(n.weather) + '</span></div>';
+    html += '<p>' + escapeHtml(n.text) + '</p>';
+    if (editMode) {
+      html += '<div class="item-actions">';
+      html += '<button class="btn" onclick="editNote(' + n.id + ')">✎</button>';
+      html += '<button class="btn btn-danger" onclick="delNote(' + n.id + ')">×</button>';
+      html += '</div>';
+    }
+    html += '</div>';
+  });
+  el.innerHTML = html;
+}
+
+function renderLikes() {
+  var el = document.getElementById('likes');
+  var html = '';
+  LIKES_GROUPS.forEach(function(g) {
+    var tags = data.likes[g.key] || [];
+    html += '<div class="like-row">';
+    html += '<h3>' + escapeHtml(g.label) + '</h3>';
+    html += '<div class="tags">';
+    if (!tags.length) {
+      html += '<span class="tag" style="opacity:.4;">暂无</span>';
+    }
+    tags.forEach(function(t) {
+      var tagText = typeof t === 'string' ? t : t.text;
+      var tagId = typeof t === 'string' ? null : t.id;
+      html += '<span class="tag">' + escapeHtml(tagText);
+      if (editMode && tagId !== null) {
+        html += '<span class="tag-actions">';
+        html += '<button class="btn" onclick="editLikeTag(\'' + g.key + '\',' + tagId + ')">✎</button>';
+        html += '<button class="btn btn-danger" onclick="delLikeTag(\'' + g.key + '\',' + tagId + ')">×</button>';
+        html += '</span>';
+      }
+      html += '</span>';
+    });
+    html += '</div></div>';
+  });
+  el.innerHTML = html;
+}
+
+function renderPlaces() {
+  var el = document.getElementById('places');
+  if (!data.places.length) {
+    el.innerHTML = '<div class="empty" style="grid-column:1/-1;">还没有记录，点击「+ 添加」开始吧</div>';
+    return;
+  }
+  var html = '';
+  data.places.forEach(function(p) {
+    html += '<div class="place">';
+    html += '<div class="name">' + escapeHtml(p.name) + '</div>';
+    html += '<div class="when">' + escapeHtml(p.when) + '</div>';
+    html += '<div class="memo">' + escapeHtml(p.memo) + '</div>';
+    if (editMode) {
+      html += '<div class="item-actions">';
+      html += '<button class="btn" onclick="editPlace(' + p.id + ')">✎</button>';
+      html += '<button class="btn btn-danger" onclick="delPlace(' + p.id + ')">×</button>';
+      html += '</div>';
+    }
+    html += '</div>';
+  });
+  el.innerHTML = html;
+}
+
+function renderWishes() {
+  var el = document.getElementById('wishes');
+  if (!data.wishes.length) {
+    el.innerHTML = '<div class="empty" style="list-style:none;">还没有记录，点击「+ 添加」开始吧</div>';
+    return;
+  }
+  var html = '';
+  data.wishes.forEach(function(w) {
+    html += '<li';
+    if (w.done) html += ' class="done"';
+    html += ' style="';
+    if (!w.done) html += 'list-style:none;';
+    html += '"';
+    if (editMode) html += ' onclick="toggleWish(' + w.id + ')"';
+    html += '>';
+    html += '<span class="txt">' + escapeHtml(w.text) + '</span>';
+    if (editMode) {
+      html += '<div class="item-actions" style="position:static;opacity:1;">';
+      html += '<button class="btn" onclick="event.stopPropagation();editWish(' + w.id + ')">✎</button>';
+      html += '<button class="btn btn-danger" onclick="event.stopPropagation();delWish(' + w.id + ')">×</button>';
+      html += '</div>';
+    }
+    html += '</li>';
+  });
+  el.innerHTML = html;
+}
+
+function renderWords() {
+  var el = document.getElementById('words');
+  if (!data.words.length) {
+    el.innerHTML = '<div class="empty">还没有记录，点击「+ 添加」开始吧</div>';
+    return;
+  }
+  var html = '';
+  data.words.forEach(function(w) {
+    html += '<div class="words">';
+    html += '<p>' + escapeHtml(w.text) + '</p>';
+    html += '<span class="when">' + escapeHtml(w.when) + '</span>';
+    if (editMode) {
+      html += '<div class="item-actions">';
+      html += '<button class="btn" onclick="editWord(' + w.id + ')">✎</button>';
+      html += '<button class="btn btn-danger" onclick="delWord(' + w.id + ')">×</button>';
+      html += '</div>';
+    }
+    html += '</div>';
+  });
+  el.innerHTML = html;
+}
+
+function toggleEdit() {
+  editMode = !editMode;
+  document.getElementById('editToggle').classList.toggle('on', editMode);
+  document.getElementById('editToggle').textContent = editMode ? '✓ 完成' : '✎ 编辑';
+  document.body.classList.toggle('edit-mode', editMode);
+  localStorage.setItem(EDIT_KEY, editMode ? '1' : '0');
+  var active = document.querySelector('.view.active');
+  if (active) {
+    var id = active.id.replace('view-', '');
+    if (id !== 'home') renderView(id);
+  }
+}
+
+function getCurrentView() {
+  var active = document.querySelector('.view.active');
+  return active ? active.id.replace('view-', '') : null;
+}
+
+function rerunCurrent() {
+  var v = getCurrentView();
+  if (v && v !== 'home') renderView(v);
+}
+
+function cancelAdd(formId) {
+  var el = document.getElementById(formId);
+  if (el) el.remove();
+}
+
+function cancelEdit(formId) {
+  var el = document.getElementById(formId);
+  if (el) { el.remove(); rerunCurrent(); }
+}
+
+function resetData() {
+  if (!confirm('确定重置为初始示例数据？所有自定义内容会清除。')) return;
+  localStorage.removeItem(STORAGE_KEY);
+  loadData();
+  var v = getCurrentView();
+  if (v && v !== 'home') renderView(v);
+  else updateCounts();
+}
+
+function deleteItem(type, id) {
+  if (!confirm('确定删除？')) return;
+  data[type] = data[type].filter(function(x) { return x.id !== id; });
+  saveData(); rerunCurrent();
+}
+
+window.editMoment = function(id) {
+  var m = data.moments.find(function(x) { return x.id === id; });
+  if (!m) return;
+  var html = '<div class="edit-form" id="edit-moment">';
+  html += '<div><label>描述</label><input id="em-text" value="' + escapeHtml(m.text) + '"></div>';
+  html += '<div><label>图片地址</label><input id="em-img" value="' + escapeHtml(m.image || '') + '"></div>';
+  html += '<div><label>或上传新图片</label><input type="file" id="em-file" accept="image/*" style="color:var(--text);font-size:13px;padding:6px 0;background:rgba(255,255,255,0.04);border-radius:8px;"></div>';
+  html += '<div style="display:flex;gap:12px;align-items:center;"><label style="margin:0;"><input type="checkbox" id="em-big"' + (m.big ? ' checked' : '') + '> 封面大图</label></div>';
+  html += '<div class="form-actions"><button class="btn" onclick="cancelEdit(\'edit-moment\')">取消</button>';
+  html += '<button class="btn btn-primary" onclick="window.__saveMomentEdit(' + id + ')">保存</button></div></div>';
+  var el = document.getElementById('gallery');
+  var idx = data.moments.findIndex(function(x) { return x.id === id; });
+  var ref = el.children[idx];
+  if (ref) { ref.remove(); }
+  el.insertAdjacentHTML('afterbegin', html);
+  window.__saveMomentEdit = function(mid) {
+    m.text = document.getElementById('em-text').value.trim();
+    if (!m.text) { alert('请填写描述'); return; }
+    m.big = document.getElementById('em-big').checked;
+    var fileInput = document.getElementById('em-file');
+    if (fileInput && fileInput.files && fileInput.files[0]) {
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        m.image = e.target.result;
+        saveData(); rerunCurrent();
+      };
+      reader.readAsDataURL(fileInput.files[0]);
+    } else {
+      m.image = document.getElementById('em-img').value.trim();
+      saveData(); rerunCurrent();
+    }
+  };
+};
+
+window.addMoment = function() {
+  var html = '<div class="edit-form" id="temp-moment">';
+  html += '<div><label>描述</label><input id="f-m-text" placeholder="这个瞬间…"></div>';
+  html += '<div><label>图片地址（可选）</label><input id="f-m-img" placeholder="留空则显示文字"></div>';
+  html += '<div><label>或上传图片</label><input type="file" id="f-m-file" accept="image/*" style="color:var(--text);font-size:13px;padding:6px 0;background:rgba(255,255,255,0.04);border-radius:8px;"></div>';
+  html += '<div style="display:flex;gap:12px;align-items:center;"><label style="margin:0;"><input type="checkbox" id="f-m-big"> 设为封面大图</label></div>';
+  html += '<div class="form-actions"><button class="btn" onclick="cancelAdd(\'temp-moment\')">取消</button>';
+  html += '<button class="btn btn-primary" onclick="window.__saveMomentAdd()">保存</button></div></div>';
+  var el = document.getElementById('gallery');
+  el.insertAdjacentHTML('afterbegin', html);
+  window.__saveMomentAdd = function() {
+    var text = document.getElementById('f-m-text').value.trim();
+    if (!text) { alert('请填写描述'); return; }
+    var image = document.getElementById('f-m-img').value.trim();
+    var big = document.getElementById('f-m-big').checked;
+    var fileInput = document.getElementById('f-m-file');
+    if (fileInput && fileInput.files && fileInput.files[0]) {
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        data.moments.push({ id: nextID('moments'), text: text, big: big, image: e.target.result });
+        saveData(); rerunCurrent();
+      };
+      reader.readAsDataURL(fileInput.files[0]);
+    } else {
+      data.moments.push({ id: nextID('moments'), text: text, big: big, image: image });
+      saveData(); rerunCurrent();
+    }
+  };
+  setTimeout(function() { var el = document.getElementById('f-m-text'); if (el) el.focus(); }, 50);
+};
+
+window.delMoment = function(id) { deleteItem('moments', id); };
+
+window.addNote = function() {
+  var d = new Date();
+  var html = '<div class="edit-form" id="temp-note">';
+  html += '<div><label>日期</label><input id="f-n-date" value="' + d.getFullYear() + '年' + (d.getMonth() + 1) + '月' + d.getDate() + '日"></div>';
+  html += '<div><label>天气</label><input id="f-n-w" value="晴"></div>';
+  html += '<div><label>内容</label><textarea id="f-n-text"></textarea></div>';
+  html += '<div class="form-actions"><button class="btn" onclick="cancelAdd(\'temp-note\')">取消</button>';
+  html += '<button class="btn btn-primary" onclick="window.__saveNoteAdd()">保存</button></div></div>';
+  var el = document.getElementById('notes');
+  el.insertAdjacentHTML('afterbegin', html);
+  window.__saveNoteAdd = function() {
+    var date = document.getElementById('f-n-date').value.trim();
+    var weather = document.getElementById('f-n-w').value.trim();
+    var text = document.getElementById('f-n-text').value.trim();
+    if (!date || !text) { alert('请填写日期和内容'); return; }
+    data.notes.push({ id: nextID('notes'), date: date, weather: weather, text: text });
+    saveData(); rerunCurrent();
+  };
+  setTimeout(function() { var el = document.getElementById('f-n-text'); if (el) el.focus(); }, 50);
+};
+
+window.editNote = function(id) {
+  var n = data.notes.find(function(x) { return x.id === id; });
+  if (!n) return;
+  var html = '<div class="edit-form" id="edit-note">';
+  html += '<div><label>日期</label><input id="en-date" value="' + escapeHtml(n.date) + '"></div>';
+  html += '<div><label>天气</label><input id="en-w" value="' + escapeHtml(n.weather) + '"></div>';
+  html += '<div><label>内容</label><textarea id="en-text">' + escapeHtml(n.text) + '</textarea></div>';
+  html += '<div class="form-actions"><button class="btn" onclick="cancelEdit(\'edit-note\')">取消</button>';
+  html += '<button class="btn btn-primary" onclick="window.__saveNoteEdit(' + id + ')">保存</button></div></div>';
+  var el = document.getElementById('notes');
+  var idx = data.notes.findIndex(function(x) { return x.id === id; });
+  var ref = el.children[idx];
+  if (ref) { ref.remove(); }
+  el.insertAdjacentHTML('afterbegin', html);
+  window.__saveNoteEdit = function(nid) {
+    n.date = document.getElementById('en-date').value.trim();
+    n.weather = document.getElementById('en-w').value.trim();
+    n.text = document.getElementById('en-text').value.trim();
+    if (!n.date || !n.text) { alert('请填写日期和内容'); return; }
+    saveData(); rerunCurrent();
+  };
+};
+
+window.delNote = function(id) { deleteItem('notes', id); };
+
+window.addLike = function() {
+  var groupOptions = LIKES_GROUPS.map(function(g) {
+    return '<option value="' + g.key + '">' + g.label + '</option>';
+  }).join('');
+  var html = '<div class="edit-form" id="temp-like">';
+  html += '<div><label>类别</label><select id="f-l-group">' + groupOptions + '</select></div>';
+  html += '<div><label>内容</label><input id="f-l-text" placeholder="如：《活着》"></div>';
+  html += '<div class="form-actions"><button class="btn" onclick="cancelAdd(\'temp-like\')">取消</button>';
+  html += '<button class="btn btn-primary" onclick="window.__saveLikeAdd()">保存</button></div></div>';
+  var el = document.getElementById('likes');
+  el.insertAdjacentHTML('afterbegin', html);
+  window.__saveLikeAdd = function() {
+    var group = document.getElementById('f-l-group').value;
+    var text = document.getElementById('f-l-text').value.trim();
+    if (!text) { alert('请填写内容'); return; }
+    if (!data.likes[group]) data.likes[group] = [];
+    data.likes[group].push({ id: nextID('likes'), text: text });
+    saveData(); rerunCurrent();
+  };
+  setTimeout(function() { var el = document.getElementById('f-l-text'); if (el) el.focus(); }, 50);
+};
+
+window.editLikeTag = function(group, id) {
+  var arr = data.likes[group];
+  var tag = arr.find(function(t) { return t.id === id; });
+  if (!tag) return;
+  var input = prompt('修改：', tag.text);
+  if (input === null) return;
+  tag.text = input.trim();
+  saveData(); rerunCurrent();
+};
+
+window.delLikeTag = function(group, id) {
+  if (!confirm('确定删除？')) return;
+  data.likes[group] = (data.likes[group] || []).filter(function(t) { return t.id !== id; });
+  saveData(); rerunCurrent();
+};
+
+window.addPlace = function() {
+  var html = '<div class="edit-form" id="temp-place">';
+  html += '<div><label>地点</label><input id="f-p-name" placeholder="如：大理"></div>';
+  html += '<div><label>时间</label><input id="f-p-when" placeholder="如：2025 · 春"></div>';
+  html += '<div><label>备忘</label><textarea id="f-p-memo"></textarea></div>';
+  html += '<div class="form-actions"><button class="btn" onclick="cancelAdd(\'temp-place\')">取消</button>';
+  html += '<button class="btn btn-primary" onclick="window.__savePlaceAdd()">保存</button></div></div>';
+  var el = document.getElementById('places');
+  el.insertAdjacentHTML('afterbegin', html);
+  window.__savePlaceAdd = function() {
+    var name = document.getElementById('f-p-name').value.trim();
+    var when = document.getElementById('f-p-when').value.trim();
+    var memo = document.getElementById('f-p-memo').value.trim();
+    if (!name) { alert('请填写地点'); return; }
+    data.places.push({ id: nextID('places'), name: name, when: when, memo: memo });
+    saveData(); rerunCurrent();
+  };
+  setTimeout(function() { var el = document.getElementById('f-p-name'); if (el) el.focus(); }, 50);
+};
+
+window.editPlace = function(id) {
+  var p = data.places.find(function(x) { return x.id === id; });
+  if (!p) return;
+  var html = '<div class="edit-form" id="edit-place">';
+  html += '<div><label>地点</label><input id="ep-name" value="' + escapeHtml(p.name) + '"></div>';
+  html += '<div><label>时间</label><input id="ep-when" value="' + escapeHtml(p.when) + '"></div>';
+  html += '<div><label>备忘</label><textarea id="ep-memo">' + escapeHtml(p.memo) + '</textarea></div>';
+  html += '<div class="form-actions"><button class="btn" onclick="cancelEdit(\'edit-place\')">取消</button>';
+  html += '<button class="btn btn-primary" onclick="window.__savePlaceEdit(' + id + ')">保存</button></div></div>';
+  var el = document.getElementById('places');
+  var idx = data.places.findIndex(function(x) { return x.id === id; });
+  var ref = el.children[idx];
+  if (ref) { ref.remove(); }
+  el.insertAdjacentHTML('afterbegin', html);
+  window.__savePlaceEdit = function(pid) {
+    p.name = document.getElementById('ep-name').value.trim();
+    p.when = document.getElementById('ep-when').value.trim();
+    p.memo = document.getElementById('ep-memo').value.trim();
+    if (!p.name) { alert('请填写地点'); return; }
+    saveData(); rerunCurrent();
+  };
+};
+
+window.delPlace = function(id) { deleteItem('places', id); };
+
+window.addWish = function() {
+  var html = '<div class="edit-form" id="temp-wish">';
+  html += '<div><label>心愿</label><input id="f-w-text" placeholder="想做的事…"></div>';
+  html += '<div class="form-actions"><button class="btn" onclick="cancelAdd(\'temp-wish\')">取消</button>';
+  html += '<button class="btn btn-primary" onclick="window.__saveWishAdd()">保存</button></div></div>';
+  var el = document.getElementById('wishes');
+  el.insertAdjacentHTML('afterbegin', html);
+  window.__saveWishAdd = function() {
+    var text = document.getElementById('f-w-text').value.trim();
+    if (!text) { alert('请填写心愿'); return; }
+    data.wishes.push({ id: nextID('wishes'), text: text, done: false });
+    saveData(); rerunCurrent();
+  };
+  setTimeout(function() { var el = document.getElementById('f-w-text'); if (el) el.focus(); }, 50);
+};
+
+window.editWish = function(id) {
+  var w = data.wishes.find(function(x) { return x.id === id; });
+  if (!w) return;
+  var html = '<div class="edit-form" id="edit-wish">';
+  html += '<div><label>心愿</label><input id="ew-text" value="' + escapeHtml(w.text) + '"></div>';
+  html += '<div style="display:flex;gap:12px;align-items:center;"><label style="margin:0;"><input type="checkbox" id="ew-done"' + (w.done ? ' checked' : '') + '> 已完成</label></div>';
+  html += '<div class="form-actions"><button class="btn" onclick="cancelEdit(\'edit-wish\')">取消</button>';
+  html += '<button class="btn btn-primary" onclick="window.__saveWishEdit(' + id + ')">保存</button></div></div>';
+  var el = document.getElementById('wishes');
+  var idx = data.wishes.findIndex(function(x) { return x.id === id; });
+  var ref = el.children[idx];
+  if (ref) { ref.remove(); }
+  el.insertAdjacentHTML('afterbegin', html);
+  window.__saveWishEdit = function(wid) {
+    w.text = document.getElementById('ew-text').value.trim();
+    w.done = document.getElementById('ew-done').checked;
+    if (!w.text) { alert('请填写心愿'); return; }
+    saveData(); rerunCurrent();
+  };
+};
+
+window.delWish = function(id) { deleteItem('wishes', id); };
+
+window.toggleWish = function(id) {
+  var w = data.wishes.find(function(x) { return x.id === id; });
+  if (!w) return;
+  w.done = !w.done;
+  saveData(); rerunCurrent();
+};
+
+window.addWord = function() {
+  var d = new Date();
+  var y = d.getFullYear() + '.' + String(d.getMonth() + 1).padStart(2, '0');
+  var html = '<div class="edit-form" id="temp-word">';
+  html += '<div><label>内容</label><textarea id="f-wd-text"></textarea></div>';
+  html += '<div><label>时间</label><input id="f-wd-when" value="— ' + y + '"></div>';
+  html += '<div class="form-actions"><button class="btn" onclick="cancelAdd(\'temp-word\')">取消</button>';
+  html += '<button class="btn btn-primary" onclick="window.__saveWordAdd()">保存</button></div></div>';
+  var el = document.getElementById('words');
+  el.insertAdjacentHTML('afterbegin', html);
+  window.__saveWordAdd = function() {
+    var text = document.getElementById('f-wd-text').value.trim();
+    var when = document.getElementById('f-wd-when').value.trim();
+    if (!text) { alert('请填写内容'); return; }
+    data.words.push({ id: nextID('words'), text: text, when: when });
+    saveData(); rerunCurrent();
+  };
+  setTimeout(function() { var el = document.getElementById('f-wd-text'); if (el) el.focus(); }, 50);
+};
+
+window.editWord = function(id) {
+  var w = data.words.find(function(x) { return x.id === id; });
+  if (!w) return;
+  var html = '<div class="edit-form" id="edit-word">';
+  html += '<div><label>内容</label><textarea id="ewd-text">' + escapeHtml(w.text) + '</textarea></div>';
+  html += '<div><label>时间</label><input id="ewd-when" value="' + escapeHtml(w.when) + '"></div>';
+  html += '<div class="form-actions"><button class="btn" onclick="cancelEdit(\'edit-word\')">取消</button>';
+  html += '<button class="btn btn-primary" onclick="window.__saveWordEdit(' + id + ')">保存</button></div></div>';
+  var el = document.getElementById('words');
+  var idx = data.words.findIndex(function(x) { return x.id === id; });
+  var ref = el.children[idx];
+  if (ref) { ref.remove(); }
+  el.insertAdjacentHTML('afterbegin', html);
+  window.__saveWordEdit = function(wid) {
+    w.text = document.getElementById('ewd-text').value.trim();
+    w.when = document.getElementById('ewd-when').value.trim();
+    if (!w.text) { alert('请填写内容'); return; }
+    saveData(); rerunCurrent();
+  };
+};
+
+window.delWord = function(id) { deleteItem('words', id); };
+
+loadData();
+updateCounts();
+
+var savedEdit = localStorage.getItem(EDIT_KEY);
+if (savedEdit === '1') {
+  editMode = true;
+  document.getElementById('editToggle').classList.add('on');
+  document.getElementById('editToggle').textContent = '✓ 完成';
+  document.body.classList.add('edit-mode');
+}
+
+// 分类卡片入场动画
+document.querySelectorAll('.cat:not(.blank)').forEach(function(cat, i) {
+  cat.classList.add('cat-enter');
+  cat.style.animationDelay = (i * 80) + 'ms';
+});
+
+// 返回顶部按钮
+var backTop = document.getElementById('backTop');
+window.addEventListener('scroll', function() {
+  if (window.scrollY > 300) {
+    backTop.classList.add('show');
+  } else {
+    backTop.classList.remove('show');
+  }
+});
+
+window.go = go;
+window.toggleEdit = toggleEdit;
+window.resetData = resetData;
+window.cancelAdd = cancelAdd;
+window.cancelEdit = cancelEdit;
+
+
+</script>
+</body>
+</html>

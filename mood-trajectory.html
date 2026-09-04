@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>心情轨迹 · 浮生录</title>
+<style>
+  :root {
+    --bg-deep: #08081a;
+    --accent: #8b5cf6;
+    --accent-glow: rgba(139, 92, 246, 0.5);
+    --accent-2: #5eead4;
+    --accent-2-glow: rgba(94, 234, 212, 0.4);
+    --accent-3: #f472b6;
+    --text: #e8e6f0;
+    --text-dim: #8b8aa0;
+    --glass: rgba(255, 255, 255, 0.06);
+    --glass-border: rgba(255, 255, 255, 0.12);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: "Georgia", "Songti SC", serif;
+    background: var(--bg-deep);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+    position: relative;
+  }
+  #bgCanvas { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+  .container { position: relative; z-index: 5; max-width: 960px; margin: 0 auto; padding: 50px 30px 80px; }
+
+  .page-header { text-align: center; margin-bottom: 40px; }
+  .page-header h1 {
+    font-size: 36px; letter-spacing: 6px;
+    background: linear-gradient(135deg, #fff 0%, var(--accent) 50%, var(--accent-3) 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 0 16px var(--accent-glow));
+    margin-bottom: 10px;
+  }
+  .page-header p { color: var(--text-dim); font-size: 14px; }
+  .page-header .back {
+    display: inline-block; margin-top: 16px;
+    color: var(--accent-2); cursor: pointer; font-size: 13px;
+  }
+  .page-header .back:hover { text-shadow: 0 0 8px var(--accent-2-glow); }
+
+  .mood-selector {
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    border-radius: 20px;
+    padding: 24px;
+    margin-bottom: 30px;
+    backdrop-filter: blur(12px);
+    text-align: center;
+  }
+  .mood-selector h3 {
+    font-size: 15px; color: var(--text-dim); margin-bottom: 16px;
+  }
+  .mood-buttons {
+    display: flex; justify-content: center; gap: 12px; flex-wrap: wrap;
+  }
+  .mood-btn {
+    display: flex; flex-direction: column; align-items: center;
+    gap: 6px; padding: 12px 16px;
+    background: transparent; border: 1px solid var(--glass-border);
+    border-radius: 14px; cursor: pointer;
+    transition: all .3s; color: var(--text-dim);
+    font-family: inherit;
+  }
+  .mood-btn:hover { transform: translateY(-3px); }
+  .mood-btn.active {
+    border-color: var(--mood-color, var(--accent));
+    box-shadow: 0 0 16px var(--mood-glow, var(--accent-glow));
+    color: var(--text);
+  }
+  .mood-btn .emoji { font-size: 28px; }
+  .mood-btn .label { font-size: 12px; }
+
+  .chart-card {
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    border-radius: 20px;
+    padding: 28px;
+    margin-bottom: 30px;
+    backdrop-filter: blur(12px);
+  }
+  .chart-card h2 {
+    font-size: 18px; color: var(--accent); margin-bottom: 20px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .chart-card h2::before {
+    content: '✦'; color: var(--accent-2);
+    text-shadow: 0 0 8px var(--accent-2-glow);
+  }
+  .chart-wrapper {
+    position: relative;
+    width: 100%;
+    height: 220px;
+  }
+  .chart-wrapper canvas {
+    width: 100%; height: 100%;
+  }
+  .chart-legend {
+    display: flex; justify-content: center; gap: 18px; margin-top: 12px;
+    font-size: 12px; color: var(--text-dim); flex-wrap: wrap;
+  }
+  .legend-dot {
+    display: inline-block; width: 10px; height: 10px; border-radius: 50%;
+    margin-right: 6px; vertical-align: middle;
+  }
+
+  .heatmap-card {
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    border-radius: 20px;
+    padding: 28px;
+    margin-bottom: 30px;
+    backdrop-filter: blur(12px);
+  }
+  .heatmap-card h2 {
+    font-size: 18px; color: var(--accent); margin-bottom: 20px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .heatmap-card h2::before {
+    content: '✦'; color: var(--accent-2);
+    text-shadow: 0 0 8px var(--accent-2-glow);
+  }
+  .heatmap {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+  }
+  .heatmap-label {
+    font-size: 10px; color: var(--text-faint);
+    text-align: center; padding: 4px 0;
+  }
+  .heatmap-cell {
+    aspect-ratio: 1;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.04);
+    transition: all .3s;
+  }
+  .heatmap-cell:hover { transform: scale(1.3); }
+
+  .stats-row {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;
+    margin-bottom: 30px;
+  }
+  .stat-card {
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    padding: 20px;
+    text-align: center;
+    backdrop-filter: blur(12px);
+  }
+  .stat-card .big-num {
+    font-size: 32px; font-weight: 700;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .stat-card .label { font-size: 12px; color: var(--text-dim); margin-top: 4px; }
+
+  .timeline-item {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--glass-border);
+  }
+  .timeline-item:last-child { border-bottom: none; }
+  .timeline-item .t-mood { font-size: 22px; }
+  .timeline-item .t-content { flex: 1; }
+  .timeline-item .t-date { font-size: 12px; color: var(--text-dim); }
+  .timeline-item .t-text { font-size: 14px; color: var(--text); margin-top: 2px; }
+
+  .mood-tag {
+    display: inline-block; padding: 2px 8px; border-radius: 999px;
+    font-size: 11px; margin-left: 8px;
+  }
+
+  @media (max-width: 600px) {
+    .stats-row { grid-template-columns: 1fr; }
+    .chart-wrapper { height: 180px; }
+  }
+</style>
+</head>
+<body>
+
+<canvas id="bgCanvas"></canvas>
+
+<div class="container">
+  <div class="page-header">
+    <h1>心情轨迹</h1>
+    <p>记录每一天的心情，看见自己的情绪潮汐</p>
+    <div class="back" onclick="history.back()">← 返回主页</div>
+  </div>
+
+  <div class="mood-selector">
+    <h3>今天的心情是？</h3>
+    <div class="mood-buttons" id="moodButtons"></div>
+  </div>
+
+  <div class="stats-row" id="statsRow"></div>
+
+  <div class="chart-card">
+    <h2>心情曲线 · 最近 30 天</h2>
+    <div class="chart-wrapper">
+      <canvas id="lineChart"></canvas>
+    </div>
+    <div class="chart-legend" id="chartLegend"></div>
+  </div>
+
+  <div class="heatmap-card">
+    <h2>心情日历 · 最近 8 周</h2>
+    <div id="heatmap"></div>
+  </div>
+
+  <div class="chart-card">
+    <h2>最近的心情记录</h2>
+    <div id="timeline"></div>
+  </div>
+</div>
+
+<script>
+(function() {
+  var canvas = document.getElementById('bgCanvas');
+  var ctx = canvas.getContext('2d');
+  var stars = [];
+  function resize() { canvas.width = innerWidth; canvas.height = innerHeight; }
+  resize();
+  addEventListener('resize', resize);
+  for (var i = 0; i < 150; i++) {
+    stars.push({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height,
+      r: Math.random() * 1.2 + 0.3,
+      a: Math.random(),
+      da: (Math.random() * 0.02 + 0.005) * (Math.random() > 0.5 ? 1 : -1),
+      vy: Math.random() * 0.15 + 0.03
+    });
+  }
+  function animate() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    stars.forEach(function(s) {
+      s.a += s.da;
+      if (s.a > 1 || s.a < 0.1) s.da = -s.da;
+      s.y += s.vy;
+      if (s.y > canvas.height) { s.y = 0; s.x = Math.random() * canvas.width; }
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(226, 232, 240, ' + s.a + ')';
+      ctx.fill();
+    });
+    requestAnimationFrame(animate);
+  }
+  animate();
+})();
+
+var MOODS = {
+  happy:    { emoji: '😊', label: '开心', value: 5, color: '#fbbf24', glow: 'rgba(251, 191, 36, 0.5)' },
+  excited:  { emoji: '🤩', label: '兴奋', value: 5, color: '#f472b6', glow: 'rgba(244, 114, 182, 0.5)' },
+  calm:     { emoji: '😌', label: '平静', value: 4, color: '#5eead4', glow: 'rgba(94, 234, 212, 0.5)' },
+  tired:    { emoji: '😴', label: '疲惫', value: 3, color: '#8b5cf6', glow: 'rgba(139, 92, 246, 0.5)' },
+  sad:      { emoji: '😢', label: '难过', value: 2, color: '#60a5fa', glow: 'rgba(96, 165, 250, 0.5)' },
+  angry:    { emoji: '😤', label: '烦躁', value: 2, color: '#f87171', glow: 'rgba(248, 113, 113, 0.5)' },
+  anxious:  { emoji: '😰', label: '焦虑', value: 1, color: '#a78bfa', glow: 'rgba(167, 139, 250, 0.5)' }
+};
+
+var MOOD_KEY = 'fushengruomeng_moods';
+
+function loadMoods() {
+  var s = localStorage.getItem(MOOD_KEY);
+  if (s) { try { return JSON.parse(s); } catch(e) {} }
+  return generateSampleMoods();
+}
+
+function generateSampleMoods() {
+  var moods = [];
+  var today = new Date();
+  var keys = Object.keys(MOODS);
+  for (var i = 59; i >= 0; i--) {
+    var d = new Date(today);
+    d.setDate(d.getDate() - i);
+    var rand = Math.random();
+    var moodKey;
+    if (rand < 0.35) moodKey = 'happy';
+    else if (rand < 0.5) moodKey = 'calm';
+    else if (rand < 0.65) moodKey = 'tired';
+    else if (rand < 0.75) moodKey = 'sad';
+    else if (rand < 0.85) moodKey = 'excited';
+    else if (rand < 0.93) moodKey = 'anxious';
+    else moodKey = 'angry';
+    if (Math.random() > 0.25) {
+      moods.push({
+        date: formatDate(d),
+        mood: moodKey,
+        note: generateNote(moodKey)
+      });
+    }
+  }
+  return moods;
+}
+
+function generateNote(mood) {
+  var notes = {
+    happy: ['今天阳光很好', '和朋友吃了顿好饭', '收到了期待已久的消息'],
+    excited: ['终于完成了一件大事', '旅行的日子定了', '看到了一场精彩的演出'],
+    calm: ['安静地看了一本书', '散步半小时', '听了一张老歌专辑'],
+    tired: ['工作太多了', '没睡好', '有点透支'],
+    sad: ['想起了一些旧事', '看了一部催泪的电影', '想念远方的人'],
+    angry: ['和人起了争执', '遇到了很烦的事', '今天诸事不顺'],
+    anxious: ['面试前一晚', '担心未来', '有点喘不过气']
+  };
+  var arr = notes[mood] || ['普通的一天'];
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
+function formatDate(d) {
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+
+var moods = loadMoods();
+
+function saveMoods() {
+  localStorage.setItem(MOOD_KEY, JSON.stringify(moods));
+}
+
+function renderMoodButtons() {
+  var container = document.getElementById('moodButtons');
+  container.innerHTML = '';
+  Object.keys(MOODS).forEach(function(key) {
+    var m = MOODS[key];
+    var btn = document.createElement('button');
+    btn.className = 'mood-btn';
+    btn.style.setProperty('--mood-color', m.color);
+    btn.style.setProperty('--mood-glow', m.glow);
+    btn.innerHTML = '<span class="emoji">' + m.emoji + '</span><span class="label">' + m.label + '</span>';
+    btn.onclick = function() {
+      var today = formatDate(new Date());
+      var existing = moods.find(function(x) { return x.date === today; });
+      var note = prompt('写一句话记录今天（可选）：', existing ? existing.note : '');
+      if (note === null && existing) {
+        existing.mood = key;
+      } else {
+        if (existing) {
+          existing.mood = key;
+          existing.note = note || existing.note || '';
+        } else {
+          moods.push({ date: today, mood: key, note: note || '' });
+        }
+      }
+      saveMoods();
+      btn.classList.add('active');
+      setTimeout(function() { btn.classList.remove('active'); renderAll(); }, 600);
+    };
+    container.appendChild(btn);
+  });
+}
+
+function renderStats() {
+  var counts = {};
+  var values = [];
+  moods.forEach(function(m) {
+    counts[m.mood] = (counts[m.mood] || 0) + 1;
+    values.push(MOODS[m.mood].value);
+  });
+  var avg = values.length ? (values.reduce(function(a,b){return a+b;},0) / values.length).toFixed(1) : 0;
+  var total = moods.length;
+  var bestMood = Object.keys(counts).reduce(function(a,b) { return counts[a] > counts[b] ? a : b; }, 'happy');
+  var goodDays = moods.filter(function(m) { return MOODS[m.mood].value >= 4; }).length;
+
+  document.getElementById('statsRow').innerHTML =
+    '<div class="stat-card"><div class="big-num">' + total + '</div><div class="label">记录天数</div></div>' +
+    '<div class="stat-card"><div class="big-num">' + avg + ' / 5</div><div class="label">平均心情指数</div></div>' +
+    '<div class="stat-card"><div class="big-num">' + MOODS[bestMood].emoji + ' ' + goodDays + '</div><div class="label">好心情天数</div></div>';
+}
+
+function renderLineChart() {
+  var canvas = document.getElementById('lineChart');
+  var dpr = window.devicePixelRatio || 1;
+  var rect = canvas.parentElement.getBoundingClientRect();
+  canvas.width = rect.width * dpr;
+  canvas.height = rect.height * dpr;
+  canvas.style.width = rect.width + 'px';
+  canvas.style.height = rect.height + 'px';
+  var ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+
+  var w = rect.width;
+  var h = rect.height;
+  var pad = { top: 20, right: 20, bottom: 30, left: 30 };
+  var chartW = w - pad.left - pad.right;
+  var chartH = h - pad.top - pad.bottom;
+
+  ctx.clearRect(0, 0, w, h);
+
+  var today = new Date();
+  var days = [];
+  for (var i = 29; i >= 0; i--) {
+    var d = new Date(today);
+    d.setDate(d.getDate() - i);
+    days.push(formatDate(d));
+  }
+
+  var dataPoints = days.map(function(date) {
+    var m = moods.find(function(x) { return x.date === date; });
+    return m ? { date: date, value: MOODS[m.mood].value, color: MOODS[m.mood].color } : null;
+  });
+
+  ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+  ctx.lineWidth = 1;
+  for (var v = 1; v <= 5; v++) {
+    var y = pad.top + (chartH / 5) * (5 - v);
+    ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(w - pad.right, y); ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,0.3)';
+    ctx.font = '9px Georgia';
+    ctx.fillText(v, pad.left - 10, y + 3);
+  }
+
+  var validPoints = [];
+  dataPoints.forEach(function(p, i) {
+    if (p) validPoints.push({ x: pad.left + (chartW / 29) * i, y: pad.top + chartH - (chartH / 5) * p.value, data: p });
+  });
+
+  if (validPoints.length > 1) {
+    var grad = ctx.createLinearGradient(0, pad.top, 0, h - pad.bottom);
+    grad.addColorStop(0, 'rgba(139, 92, 246, 0.4)');
+    grad.addColorStop(1, 'rgba(139, 92, 246, 0)');
+    ctx.beginPath();
+    ctx.moveTo(validPoints[0].x, h - pad.bottom);
+    validPoints.forEach(function(p) { ctx.lineTo(p.x, p.y); });
+    ctx.lineTo(validPoints[validPoints.length-1].x, h - pad.bottom);
+    ctx.closePath();
+    ctx.fillStyle = grad;
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.moveTo(validPoints[0].x, validPoints[0].y);
+    for (var i = 1; i < validPoints.length; i++) {
+      var prev = validPoints[i-1];
+      var cur = validPoints[i];
+      var cpx = (prev.x + cur.x) / 2;
+      ctx.bezierCurveTo(cpx, prev.y, cpx, cur.y, cur.x, cur.y);
+    }
+    ctx.strokeStyle = '#8b5cf6';
+    ctx.lineWidth = 2;
+    ctx.shadowColor = 'rgba(139, 92, 246, 0.5)';
+    ctx.shadowBlur = 8;
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+  }
+
+  validPoints.forEach(function(p) {
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 5, 0, Math.PI * 2);
+    ctx.fillStyle = p.data.color;
+    ctx.shadowColor = p.data.color;
+    ctx.shadowBlur = 10;
+    ctx.fill();
+    ctx.shadowBlur = 0;
+  });
+
+  var legendHtml = '';
+  Object.keys(MOODS).forEach(function(key) {
+    var m = MOODS[key];
+    var count = moods.filter(function(x) { return x.mood === key; }).length;
+    if (count > 0) {
+      legendHtml += '<span><span class="legend-dot" style="background:' + m.color + '"></span>' + m.emoji + ' ' + m.label + ' (' + count + ')</span>';
+    }
+  });
+  document.getElementById('chartLegend').innerHTML = legendHtml;
+}
+
+function renderHeatmap() {
+  var container = document.getElementById('heatmap');
+  var dayLabels = ['一','二','三','四','五','六','日'];
+  var weeks = 8;
+  var html = '';
+
+  html += '<div style="display:grid;grid-template-columns:repeat(' + weeks + ',1fr);gap:4px;margin-bottom:4px;">';
+  html += '<div style="grid-column:1/-1;display:grid;grid-template-columns:repeat(7,1fr);gap:4px;">';
+  for (var d = 0; d < 7; d++) {
+    html += '<div class="heatmap-label">' + dayLabels[d] + '</div>';
+  }
+  html += '</div></div>';
+
+  var today = new Date();
+  today.setHours(0,0,0,0);
+  var startDate = new Date(today);
+  startDate.setDate(startDate.getDate() - (weeks * 7 - 1));
+
+  html += '<div style="display:grid;grid-template-columns:repeat(' + weeks + 'days, 1fr);gap:4px;">'.replace('days', weeks);
+
+  for (var w = 0; w < weeks; w++) {
+    html += '<div style="display:grid;grid-template-columns:1fr;gap:4px;">';
+    for (var d = 0; d < 7; d++) {
+      var cellDate = new Date(startDate);
+      cellDate.setDate(cellDate.getDate() + w * 7 + d);
+      var ds = formatDate(cellDate);
+      var m = moods.find(function(x) { return x.date === ds; });
+      var cell = '<div class="heatmap-cell"';
+      if (m) {
+        cell += ' style="background:' + MOODS[m.mood].color + ';box-shadow:0 0 6px ' + MOODS[m.mood].glow + '"';
+        cell += ' title="' + ds + ' ' + MOODS[m.mood].emoji + ' ' + MOODS[m.mood].label + '"';
+      } else {
+        cell += ' title="' + ds + ' 未记录"';
+      }
+      cell += '></div>';
+      html += cell;
+    }
+    html += '</div>';
+  }
+  html += '</div>';
+
+  container.innerHTML = html;
+}
+
+function renderTimeline() {
+  var container = document.getElementById('timeline');
+  var sorted = moods.slice().sort(function(a, b) { return a.date < b.date ? 1 : -1; });
+  var recent = sorted.slice(0, 10);
+  if (!recent.length) {
+    container.innerHTML = '<div style="text-align:center;color:var(--text-dim);padding:30px;">还没有记录，点上面的心情按钮开始吧</div>';
+    return;
+  }
+  var html = '';
+  recent.forEach(function(m) {
+    var md = MOODS[m.mood];
+    html += '<div class="timeline-item">';
+    html += '<div class="t-mood">' + md.emoji + '</div>';
+    html += '<div class="t-content">';
+    html += '<div class="t-date">' + m.date + ' · ' + md.label + '</div>';
+    if (m.note) html += '<div class="t-text">' + m.note + '</div>';
+    html += '</div>';
+    html += '</div>';
+  });
+  container.innerHTML = html;
+}
+
+function renderAll() {
+  renderStats();
+  renderLineChart();
+  renderHeatmap();
+  renderTimeline();
+}
+
+renderMoodButtons();
+renderAll();
+
+addEventListener('resize', function() {
+  renderLineChart();
+});
+</script>
+</body>
+</html>
