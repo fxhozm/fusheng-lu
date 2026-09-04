@@ -536,6 +536,7 @@
     <div class="logo" onclick="go('home')">浮生若梦</div>
     <div class="nav-flower">✦</div>
     <div style="display:flex;align-items:center;gap:12px;">
+      <span id="sync-status" style="font-size:11px;color:var(--text-dim);opacity:0;transition:opacity .3s;">同步中</span>
       <div class="edit-bar">
         <button class="btn" onclick="resetData()">↺ 重置</button>
       </div>
@@ -545,6 +546,7 @@
   </div>
 </nav>
 
+<script src="config.local.js" onerror="/* no local config */"></script>
 <div id="view-home" class="view active">
   <div class="home-center">
     <div class="home-hero">
@@ -846,17 +848,61 @@ var LIKES_GROUPS = [
 var STORAGE_KEY = 'fushengruomeng_data';
 var EDIT_KEY = 'fushengruomeng_edit';
 
+// === GitHub 云同步配置 ===
+var GH_OWNER = 'fxhozm';
+var GH_REPO = 'fusheng-lu';
+var GH_PATH = 'data.json';
+var GH_BRANCH = 'master';
+var GH_TOKEN = window._GH_TOKEN || '';
+var cloudSHA = null;
+var syncTimer = null;
+// === 云同步配置结束 ===
+
 var editMode = false;
 var data = null;
 var nextId = {};
 
 function loadData() {
-  var saved = localStorage.getItem(STORAGE_KEY);
-  if (saved) {
-    try { data = JSON.parse(saved); } catch (e) { data = JSON.parse(JSON.stringify(DEFAULTS)); }
-  } else {
-    data = JSON.parse(JSON.stringify(DEFAULTS));
+  // 先尝试从 GitHub 云端加载（公开的 data.json）
+  var loaded = false;
+  try {
+    var url = 'https://raw.githubusercontent.com/' + GH_OWNER + '/' + GH_REPO + '/' + GH_BRANCH + '/' + GH_PATH + '?t=' + Date.now();
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', url, false);
+    xhr.send(null);
+    if (xhr.status === 200) {
+      cloudSyncStatus('云同步');
+      data = JSON.parse(xhr.responseText);
+      loaded = true;
+    }
+  } catch (e) { /* 静默失败 */ }
+
+  if (!loaded) {
+    var saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      try { data = JSON.parse(saved); cloudSyncStatus('本地数据'); }
+      catch (e) { data = JSON.parse(JSON.stringify(DEFAULTS)); cloudSyncStatus('默认'); }
+    } else {
+      data = JSON.parse(JSON.stringify(DEFAULTS)); cloudSyncStatus('默认');
+    }
   }
+  initNextId();
+  if (GH_TOKEN) {
+    try {
+      var apiXhr = new XMLHttpRequest();
+      apiXhr.open('GET', 'https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + GH_PATH + '?ref=' + GH_BRANCH, false);
+      apiXhr.setRequestHeader('Authorization', 'token ' + GH_TOKEN);
+      apiXhr.send(null);
+      if (apiXhr.status === 200) {
+        cloudSHA = JSON.parse(apiXhr.responseText).sha;
+      } else if (apiXhr.status === 404) {
+        syncToCloud();
+      }
+    } catch (e) { }
+  }
+}
+
+function initNextId() {
   nextId = {};
   ['moments','notes','places','wishes','words'].forEach(function(k) {
     nextId[k] = (data[k] || []).reduce(function(m, it) { return Math.max(m, it.id || 0); }, 0) + 1;
@@ -873,6 +919,45 @@ function loadData() {
 function saveData() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
   updateCounts();
+  syncToCloud();
+}
+
+function syncToCloud() {
+  if (!GH_TOKEN) return;
+  if (syncTimer) clearTimeout(syncTimer);
+  syncTimer = setTimeout(function() {
+    cloudSyncStatus('同步中…');
+    var content = btoa(unescape(encodeURIComponent(JSON.stringify(data, null, 2))));
+    var url = 'https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + GH_PATH;
+    var body = { message: 'sync data', content: content, branch: GH_BRANCH };
+    if (cloudSHA) body.sha = cloudSHA;
+    fetch(url, {
+      method: 'PUT',
+      headers: {
+        'Authorization': 'token ' + GH_TOKEN,
+        'Content-Type': 'application/json',
+        'Accept': 'application/vnd.github.v3+json'
+      },
+      body: JSON.stringify(body)
+    }).then(function(r) { return r.json(); })
+      .then(function(resp) {
+        if (resp.content && resp.content.sha) {
+          cloudSHA = resp.content.sha;
+          cloudSyncStatus('已同步');
+          setTimeout(function() { cloudSyncStatus(''); }, 2000);
+        } else {
+          cloudSyncStatus('同步失败');
+        }
+      })
+      .catch(function() { cloudSyncStatus('同步失败'); });
+  }, 800);
+}
+
+function cloudSyncStatus(text) {
+  var el = document.getElementById('sync-status');
+  if (!el) return;
+  el.textContent = text;
+  el.style.opacity = text ? '1' : '0';
 }
 
 function nextID(type) {
