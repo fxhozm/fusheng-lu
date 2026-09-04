@@ -916,49 +916,60 @@ function isValidData(d) {
 }
 
 function loadData() {
-  // 先尝试从 GitHub 云端加载（公开的 data.json）
-  var loaded = false;
+  // 先用本地缓存/默认数据立即渲染，避免网络慢导致页面卡住白屏
+  var saved = localStorage.getItem(STORAGE_KEY);
+  if (saved) {
+    try {
+      var localParsed = JSON.parse(saved);
+      if (isValidData(localParsed)) { data = localParsed; cloudSyncStatus('本地数据'); }
+      else { data = JSON.parse(JSON.stringify(DEFAULTS)); cloudSyncStatus('默认'); }
+    } catch (e) { data = JSON.parse(JSON.stringify(DEFAULTS)); cloudSyncStatus('默认'); }
+  } else {
+    data = JSON.parse(JSON.stringify(DEFAULTS)); cloudSyncStatus('默认');
+  }
+  initNextId();
+
+  // 异步拉取云端 data.json，不阻塞渲染；成功后刷新界面
   try {
     var url = (location.protocol === 'file:')
       ? 'https://raw.githubusercontent.com/' + GH_OWNER + '/' + GH_REPO + '/' + GH_BRANCH + '/' + GH_PATH + '?t=' + Date.now()
       : GH_PATH + '?t=' + Date.now();
     var xhr = new XMLHttpRequest();
-    xhr.open('GET', url, false);
-    xhr.send(null);
-    if (xhr.status === 200) {
-      var parsed = JSON.parse(xhr.responseText);
-      if (isValidData(parsed)) {
-        data = parsed;
-        cloudSyncStatus('云同步');
-        loaded = true;
+    xhr.open('GET', url, true);
+    xhr.onreadystatechange = function() {
+      if (xhr.readyState !== 4) return;
+      if (xhr.status === 200) {
+        try {
+          var parsed = JSON.parse(xhr.responseText);
+          if (isValidData(parsed)) {
+            data = parsed;
+            cloudSyncStatus('云同步');
+            initNextId();
+            updateCounts();
+            var v = getCurrentView();
+            if (v && v !== 'home') renderView(v);
+          }
+        } catch (e) { }
       }
-    }
-  } catch (e) { /* 静默失败 */ }
+    };
+    xhr.send(null);
+  } catch (e) { }
 
-  if (!loaded) {
-    var saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      try {
-        var localParsed = JSON.parse(saved);
-        if (isValidData(localParsed)) { data = localParsed; cloudSyncStatus('本地数据'); }
-        else { data = JSON.parse(JSON.stringify(DEFAULTS)); cloudSyncStatus('默认'); }
-      } catch (e) { data = JSON.parse(JSON.stringify(DEFAULTS)); cloudSyncStatus('默认'); }
-    } else {
-      data = JSON.parse(JSON.stringify(DEFAULTS)); cloudSyncStatus('默认');
-    }
-  }
-  initNextId();
+  // 异步获取云端文件 sha（保存时用于覆盖），不阻塞渲染
   if (GH_TOKEN) {
     try {
       var apiXhr = new XMLHttpRequest();
-      apiXhr.open('GET', 'https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + GH_PATH + '?ref=' + GH_BRANCH, false);
+      apiXhr.open('GET', 'https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + GH_PATH + '?ref=' + GH_BRANCH, true);
       apiXhr.setRequestHeader('Authorization', 'token ' + GH_TOKEN);
+      apiXhr.onreadystatechange = function() {
+        if (apiXhr.readyState !== 4) return;
+        if (apiXhr.status === 200) {
+          cloudSHA = JSON.parse(apiXhr.responseText).sha;
+        } else if (apiXhr.status === 404) {
+          syncToCloud();
+        }
+      };
       apiXhr.send(null);
-      if (apiXhr.status === 200) {
-        cloudSHA = JSON.parse(apiXhr.responseText).sha;
-      } else if (apiXhr.status === 404) {
-        syncToCloud();
-      }
     } catch (e) { }
   }
 }
