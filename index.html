@@ -1185,10 +1185,12 @@ function escapeHtml(s) {
 function resolveImage(src) {
   if (!src) return '';
   if (/^(data:|https?:|\/\/)/i.test(src)) return src;
+  var p = src.replace(/^\//, '');
   if (location.protocol === 'file:') {
-    return 'https://raw.githubusercontent.com/' + GH_OWNER + '/' + GH_REPO + '/' + GH_BRANCH + '/' + src.replace(/^\//, '');
+    return 'https://raw.githubusercontent.com/' + GH_OWNER + '/' + GH_REPO + '/' + GH_BRANCH + '/' + p;
   }
-  return src;
+  // 部署后走 jsDelivr CDN 加速（大陆访问更快）
+  return 'https://cdn.jsdelivr.net/gh/' + GH_OWNER + '/' + GH_REPO + '@' + GH_BRANCH + '/' + p;
 }
 
 function renderMoments() {
