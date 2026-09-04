@@ -1019,6 +1019,59 @@ function cloudSyncStatus(text) {
   el.style.opacity = text ? '1' : '0';
 }
 
+// 压缩图片：最长边 1920px，JPEG 质量 0.82，避免大图撑爆 data.json
+function compressImage(file, cb) {
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var img = new Image();
+    img.onload = function() {
+      var MAX = 1920;
+      var w = img.width, h = img.height;
+      var scale = Math.min(1, MAX / Math.max(w, h));
+      var canvas = document.createElement('canvas');
+      canvas.width = Math.max(1, Math.round(w * scale));
+      canvas.height = Math.max(1, Math.round(h * scale));
+      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+      cb(canvas.toDataURL('image/jpeg', 0.82));
+    };
+    img.onerror = function() { alert('图片处理失败'); cb(null); };
+    img.src = e.target.result;
+  };
+  reader.onerror = function() { alert('图片读取失败'); cb(null); };
+  reader.readAsDataURL(file);
+}
+
+// 上传图片到仓库 images/moments/ 目录，成功后回调返回相对路径（不回写 data.json 的大 base64）
+function uploadImageToCloud(file, cb) {
+  if (!GH_TOKEN) { alert('需要先设置 GitHub Token 才能上传图片，请点击 ⚙ 设置 Token'); cb(null); return; }
+  var filename = 'images/moments/' + Date.now() + '_' + Math.floor(Math.random() * 1000) + '.jpg';
+  compressImage(file, function(base64) {
+    if (!base64) { cb(null); return; }
+    var content = base64.split(',')[1];
+    var url = 'https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + filename;
+    fetch(url, {
+      method: 'PUT',
+      headers: {
+        'Authorization': 'token ' + GH_TOKEN,
+        'Content-Type': 'application/json',
+        'Accept': 'application/vnd.github.v3+json'
+      },
+      body: JSON.stringify({ message: 'upload image', content: content, branch: GH_BRANCH })
+    }).then(function(r) { return r.json(); })
+      .then(function(resp) {
+        if (resp.content && resp.content.path) {
+          cloudSyncStatus('图片已上传');
+          setTimeout(function() { cloudSyncStatus(''); }, 2000);
+          cb(filename);
+        } else {
+          alert('图片上传失败：' + (resp && resp.message ? resp.message : '未知错误'));
+          cb(null);
+        }
+      })
+      .catch(function() { alert('图片上传失败（网络错误）'); cb(null); });
+  });
+}
+
 // === Token 设置（用于手机端云同步） ===
 function openTokenSettings() {
   var existing = document.getElementById('token-settings');
@@ -1126,6 +1179,16 @@ function escapeHtml(s) {
   return div.innerHTML;
 }
 
+// 图片地址解析：data:/http 直接用；相对路径(images/xxx)在本地 file:// 下拼 raw 地址，部署到线上后同源加载
+function resolveImage(src) {
+  if (!src) return '';
+  if (/^(data:|https?:|\/\/)/i.test(src)) return src;
+  if (location.protocol === 'file:') {
+    return 'https://raw.githubusercontent.com/' + GH_OWNER + '/' + GH_REPO + '/' + GH_BRANCH + '/' + src.replace(/^\//, '');
+  }
+  return src;
+}
+
 function renderMoments() {
   var el = document.getElementById('gallery');
   if (!data.moments.length) {
@@ -1137,7 +1200,7 @@ function renderMoments() {
     var cls = 'photo' + (m.big ? ' big' : '');
     html += '<div class="' + cls + '">';
     if (m.image) {
-      html += '<img src="' + escapeHtml(m.image) + '" alt="">';
+      html += '<img src="' + escapeHtml(resolveImage(m.image)) + '" alt="">';
     } else {
       html += escapeHtml(m.text.replace(/\n/g, '<br>'));
     }
@@ -1351,12 +1414,9 @@ window.editMoment = function(id) {
     m.big = document.getElementById('em-big').checked;
     var fileInput = document.getElementById('em-file');
     if (fileInput && fileInput.files && fileInput.files[0]) {
-      var reader = new FileReader();
-      reader.onload = function(e) {
-        m.image = e.target.result;
-        saveData(); rerunCurrent();
-      };
-      reader.readAsDataURL(fileInput.files[0]);
+      uploadImageToCloud(fileInput.files[0], function(path) {
+        if (path) { m.image = path; saveData(); rerunCurrent(); }
+      });
     } else {
       m.image = document.getElementById('em-img').value.trim();
       saveData(); rerunCurrent();
@@ -1381,12 +1441,9 @@ window.addMoment = function() {
     var big = document.getElementById('f-m-big').checked;
     var fileInput = document.getElementById('f-m-file');
     if (fileInput && fileInput.files && fileInput.files[0]) {
-      var reader = new FileReader();
-      reader.onload = function(e) {
-        data.moments.push({ id: nextID('moments'), text: text, big: big, image: e.target.result });
-        saveData(); rerunCurrent();
-      };
-      reader.readAsDataURL(fileInput.files[0]);
+      uploadImageToCloud(fileInput.files[0], function(path) {
+        if (path) { data.moments.push({ id: nextID('moments'), text: text, big: big, image: path }); saveData(); rerunCurrent(); }
+      });
     } else {
       data.moments.push({ id: nextID('moments'), text: text, big: big, image: image });
       saveData(); rerunCurrent();
