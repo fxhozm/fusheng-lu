@@ -1473,7 +1473,7 @@ window.addNote = function() {
     var weather = document.getElementById('f-n-w').value.trim();
     var text = document.getElementById('f-n-text').value.trim();
     if (!date || !text) { alert('请填写日期和内容'); return; }
-    data.notes.push({ id: nextID('notes'), date: date, weather: weather, text: text });
+    data.notes.unshift({ id: nextID('notes'), date: date, weather: weather, text: text });
     saveData(); rerunCurrent();
   };
   setTimeout(function() { var el = document.getElementById('f-n-text'); if (el) el.focus(); }, 50);
