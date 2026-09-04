@@ -907,6 +907,13 @@ var editMode = false;
 var data = null;
 var nextId = {};
 
+// 检查数据是否有效（必须包含核心字段）
+function isValidData(d) {
+  if (!d || typeof d !== 'object') return false;
+  var coreKeys = ['moments', 'notes', 'likes', 'places', 'wishes', 'words'];
+  return coreKeys.every(function(k) { return d[k] !== undefined; });
+}
+
 function loadData() {
   // 先尝试从 GitHub 云端加载（公开的 data.json）
   var loaded = false;
@@ -916,17 +923,23 @@ function loadData() {
     xhr.open('GET', url, false);
     xhr.send(null);
     if (xhr.status === 200) {
-      cloudSyncStatus('云同步');
-      data = JSON.parse(xhr.responseText);
-      loaded = true;
+      var parsed = JSON.parse(xhr.responseText);
+      if (isValidData(parsed)) {
+        data = parsed;
+        cloudSyncStatus('云同步');
+        loaded = true;
+      }
     }
   } catch (e) { /* 静默失败 */ }
 
   if (!loaded) {
     var saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
-      try { data = JSON.parse(saved); cloudSyncStatus('本地数据'); }
-      catch (e) { data = JSON.parse(JSON.stringify(DEFAULTS)); cloudSyncStatus('默认'); }
+      try {
+        var localParsed = JSON.parse(saved);
+        if (isValidData(localParsed)) { data = localParsed; cloudSyncStatus('本地数据'); }
+        else { data = JSON.parse(JSON.stringify(DEFAULTS)); cloudSyncStatus('默认'); }
+      } catch (e) { data = JSON.parse(JSON.stringify(DEFAULTS)); cloudSyncStatus('默认'); }
     } else {
       data = JSON.parse(JSON.stringify(DEFAULTS)); cloudSyncStatus('默认');
     }
