@@ -768,12 +768,17 @@ if (!Array.isArray(travels)) {
   if (needFix) saveTravels();
 }
 
-/* ===== 合并事件流 ===== */
+/* ===== 合并事件流与渲染 ===== */
 var events = [];
+
+function renderRiver() {
+  events = [];
 
 // 生活记录
 (lifeData.moments||[]).forEach(function(m) {
-  if (m && m.date) events.push({ type:'moment', title:m.text||'', date:m.date, desc:m.big?'封面级瞬间':'', sortDate:m.date, sortTime:m._ts || 0 });
+  if (!m) return;
+  var md = m.date || '2000-01-01';
+  events.push({ type:'moment', title:m.text||'', date:md, desc:m.big?'封面级瞬间':'', sortDate:md, sortTime:m._ts || 0 });
 });
 (lifeData.notes||[]).forEach(function(n) {
   if (!n) return;
@@ -836,6 +841,7 @@ var STATUS_MAP = {
 };
 
 var river = document.getElementById('river');
+river.innerHTML = '';
 var lastYear = '';
 var nodeIndex = 0;
 
@@ -934,7 +940,39 @@ var observer = new IntersectionObserver(function(entries) {
     }
   });
 }, { threshold: 0.1 });
-document.querySelectorAll('.node').forEach(function(n) { observer.observe(n); });
+  river.querySelectorAll('.node').forEach(function(n) { observer.observe(n); });
+}
+
+renderRiver();
+
+// 异步从云端拉取最新数据，覆盖本地缓存
+(function() {
+  try {
+    var url = (location.protocol === 'file:')
+      ? 'https://raw.githubusercontent.com/fxhozm/fusheng-lu/master/data.json?t=' + Date.now()
+      : 'data.json?t=' + Date.now();
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', url, true);
+    xhr.onreadystatechange = function() {
+      if (xhr.readyState !== 4) return;
+      if (xhr.status === 200) {
+        try {
+          var parsed = JSON.parse(xhr.responseText);
+          if (parsed && typeof parsed === 'object' && (parsed.notes || parsed.moments || parsed.places)) {
+            lifeData = parsed;
+            lifeData.moments = lifeData.moments || [];
+            lifeData.notes = lifeData.notes || [];
+            lifeData.places = lifeData.places || [];
+            lifeData.wishes = lifeData.wishes || [];
+            lifeData.words = lifeData.words || [];
+            renderRiver();
+          }
+        } catch(e) { }
+      }
+    };
+    xhr.send(null);
+  } catch(e) { }
+})();
 
 /* ===== 旅行展开/收起 ===== */
 function toggleTravel(idx) {

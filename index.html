@@ -1465,6 +1465,11 @@ window.editMoment = function(id) {
   };
 };
 
+function todayStr() {
+  var d = new Date();
+  return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2);
+}
+
 window.addMoment = function() {
   var html = '<div class="edit-form" id="temp-moment">';
   html += '<div><label>描述</label><input id="f-m-text" placeholder="这个瞬间…"></div>';
@@ -1483,10 +1488,10 @@ window.addMoment = function() {
     var fileInput = document.getElementById('f-m-file');
     if (fileInput && fileInput.files && fileInput.files[0]) {
       uploadImageToCloud(fileInput.files[0], function(path) {
-        if (path) { data.moments.unshift({ id: nextID('moments'), text: text, big: big, image: path }); saveData(); rerunCurrent(); }
+        if (path) { data.moments.unshift({ id: nextID('moments'), text: text, big: big, image: path, date: todayStr() }); saveData(); rerunCurrent(); }
       });
     } else {
-      data.moments.unshift({ id: nextID('moments'), text: text, big: big, image: image });
+      data.moments.unshift({ id: nextID('moments'), text: text, big: big, image: image, date: todayStr() });
       saveData(); rerunCurrent();
     }
   };
