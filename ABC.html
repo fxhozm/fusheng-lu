@@ -987,14 +987,14 @@ function mergeLocalAdditions() {
       var ids = {};
       (data[k] || []).forEach(function(x) { ids[x.id] = true; });
       li.forEach(function(it) {
-        if (it.id && !ids[it.id]) { data[k] = data[k] || []; data[k].push(it); }
+        if (it.id && !ids[it.id]) { data[k] = data[k] || []; data[k].unshift(it); }
       });
     });
     Object.keys(local.likes || {}).forEach(function(g) {
       (local.likes[g] || []).forEach(function(tag) {
         if (!tag.id) return;
         var exists = (data.likes[g] || []).some(function(x) { return x.id === tag.id; });
-        if (!exists) { data.likes[g] = data.likes[g] || []; data.likes[g].push(tag); }
+        if (!exists) { data.likes[g] = data.likes[g] || []; data.likes[g].unshift(tag); }
       });
     });
   } catch (e) { }
