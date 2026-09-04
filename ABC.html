@@ -581,11 +581,13 @@
     <div class="logo" onclick="go('home')">浮生若梦</div>
     <div class="nav-flower">✦</div>
     <div style="display:flex;align-items:center;gap:12px;">
+      <div style="display:flex;align-items:center;gap:12px;">
       <span id="sync-status" style="font-size:11px;color:var(--text-dim);opacity:0;transition:opacity .3s;">同步中</span>
       <div class="edit-bar">
         <button class="btn" onclick="resetData()">↺ 重置</button>
       </div>
       <div class="edit-toggle" id="editToggle" onclick="toggleEdit()">✎ 编辑</div>
+      <div class="edit-toggle" onclick="openTokenSettings()" title="云同步设置">⚙</div>
       <div class="back" onclick="go('home')">← 返回首页</div>
     </div>
   </div>
@@ -898,7 +900,7 @@ var GH_OWNER = 'fxhozm';
 var GH_REPO = 'fusheng-lu';
 var GH_PATH = 'data.json';
 var GH_BRANCH = 'master';
-var GH_TOKEN = window._GH_TOKEN || '';
+var GH_TOKEN = window._GH_TOKEN || localStorage.getItem('_gh_token') || '';
 var cloudSHA = null;
 var syncTimer = null;
 // === 云同步配置结束 ===
@@ -1016,6 +1018,65 @@ function cloudSyncStatus(text) {
   if (!el) return;
   el.textContent = text;
   el.style.opacity = text ? '1' : '0';
+}
+
+// === Token 设置（用于手机端云同步） ===
+function openTokenSettings() {
+  var existing = document.getElementById('token-settings');
+  if (existing) { existing.remove(); return; }
+  var hasToken = !!GH_TOKEN;
+  var html = '<div id="token-settings" style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.6);z-index:9999;display:flex;align-items:center;justify-content:center;" onclick="if(event.target===this)this.remove()">';
+  html += '<div style="background:var(--card);border-radius:16px;padding:24px;max-width:340px;width:90%;border:1px solid var(--border);">';
+  html += '<h3 style="margin:0 0 12px;font-size:16px;">☁ 云同步设置</h3>';
+  if (hasToken) {
+    html += '<p style="font-size:12px;color:var(--text-dim);margin:0 0 12px;">当前状态：<span style="color:var(--ok, #4caf50);">已连接</span></p>';
+    html += '<p style="font-size:11px;color:var(--text-dim);margin:0 0 12px;">Token 仅保存在本设备浏览器的 localStorage 中，不会上传到服务器。</p>';
+    html += '<div style="display:flex;gap:8px;"><button class="btn" onclick="clearTokenSettings()">清除 Token</button><button class="btn btn-primary" onclick="document.getElementById(\'token-settings\').remove()">关闭</button></div>';
+  } else {
+    html += '<p style="font-size:12px;color:var(--text-dim);margin:0 0 12px;">手机端编辑需要输入 GitHub Personal Access Token 才能同步到云端。</p>';
+    html += '<p style="font-size:11px;color:var(--text-dim);margin:0 0 12px;">获取地址：<a href="https://github.com/settings/tokens?type=beta" target="_blank" style="color:var(--accent);">github.com/settings/tokens</a></p>';
+    html += '<input id="token-input" type="password" placeholder="粘贴你的 GitHub Token" style="width:100%;padding:10px;border:1px solid var(--border);background:rgba(255,255,255,.04);color:var(--text);border-radius:8px;font-size:13px;box-sizing:border-box;">';
+    html += '<div style="display:flex;gap:8px;margin-top:12px;">';
+    html += '<button class="btn" onclick="document.getElementById(\'token-settings\').remove()">取消</button>';
+    html += '<button class="btn btn-primary" onclick="saveTokenSettings()">保存并同步</button>';
+    html += '</div>';
+  }
+  html += '</div></div>';
+  document.body.insertAdjacentHTML('beforeend', html);
+  if (!hasToken) {
+    setTimeout(function() { document.getElementById('token-input').focus(); }, 100);
+  }
+}
+
+function saveTokenSettings() {
+  var input = document.getElementById('token-input');
+  var val = input ? input.value.trim() : '';
+  if (!val) { alert('Token 不能为空'); return; }
+  GH_TOKEN = val;
+  localStorage.setItem('_gh_token', val);
+  document.getElementById('token-settings').remove();
+  cloudSHA = null;
+  // 加载云端 SHA 并触发首次同步
+  try {
+    var apiXhr = new XMLHttpRequest();
+    apiXhr.open('GET', 'https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + GH_PATH + '?ref=' + GH_BRANCH, false);
+    apiXhr.setRequestHeader('Authorization', 'token ' + GH_TOKEN);
+    apiXhr.send(null);
+    if (apiXhr.status === 200) {
+      cloudSHA = JSON.parse(apiXhr.responseText).sha;
+    }
+  } catch (e) { }
+  saveData();
+  alert('Token 已保存，开始云同步');
+}
+
+function clearTokenSettings() {
+  if (!confirm('确定清除本设备的 Token？清除后手机将无法同步到云端。')) return;
+  GH_TOKEN = '';
+  localStorage.removeItem('_gh_token');
+  cloudSHA = null;
+  cloudSyncStatus('');
+  document.getElementById('token-settings').remove();
 }
 
 function nextID(type) {
@@ -1587,6 +1648,9 @@ window.toggleEdit = toggleEdit;
 window.resetData = resetData;
 window.cancelAdd = cancelAdd;
 window.cancelEdit = cancelEdit;
+window.openTokenSettings = openTokenSettings;
+window.saveTokenSettings = saveTokenSettings;
+window.clearTokenSettings = clearTokenSettings;
 
 
 </script>
