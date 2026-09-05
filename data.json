@@ -127,6 +127,11 @@
   ],
   "wishes": [
     {
+      "id": 6,
+      "text": "神经松解术",
+      "done": false
+    },
+    {
       "id": 1,
       "text": "学一门乐器",
       "done": false
