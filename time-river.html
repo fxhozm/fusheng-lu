@@ -791,11 +791,17 @@ function renderRiver() {
 });
 (lifeData.wishes||[]).forEach(function(w) {
   if (!w) return;
-  events.push({ type:'wish', title:w.text||'', date:w.sortDate||'2026-01-01', desc:w.done?'已完成 ✓':'想做的事', done:!!w.done, sortDate:w.sortDate||'2026-01-01', sortTime:w._ts || 0 });
+  var wd = w.sortDate || w.date || '';
+  events.push({ type:'wish', title:w.text||'', date:wd, desc:w.done?'已完成 ✓':'想做的事', done:!!w.done, sortDate:wd, sortTime:w._ts || 0 });
 });
 (lifeData.words||[]).forEach(function(w) {
   if (!w) return;
-  events.push({ type:'word', title:w.when||'', date:w.sortDate||'2026-06-01', desc:w.text||'', sortDate:w.sortDate||'2026-06-01', sortTime:w._ts || 0 });
+  var wd = w.sortDate || '';
+  if (!wd && w.when) {
+    var m = String(w.when).match(/(\d{4})[.\-\/年](\d{1,2})/);
+    if (m) wd = m[1] + '-' + ('0' + m[2]).slice(-2) + '-01';
+  }
+  events.push({ type:'word', title:w.when||'', date:wd, desc:w.text||'', sortDate:wd, sortTime:w._ts || 0 });
 });
 
 // 旅行记录（确保是数组）
