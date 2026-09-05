@@ -945,8 +945,9 @@ function loadData() {
           var parsed = JSON.parse(xhr.responseText);
           if (isValidData(parsed)) {
             data = parsed;
-            mergeLocalAdditions();
+            var mergedLocal = mergeLocalAdditions();
             localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+            if (mergedLocal) syncToCloud();
             cloudSyncStatus('云同步');
             initNextId();
             updateCounts();
@@ -982,10 +983,11 @@ function mergeLocalAdditions() {
   // 合并本地新增但云端没有的内容，防止未同步时刷新丢失；
   // 已删除的记录（本机墓碑 + 云端墓碑）不会被合并回来
   var saved = localStorage.getItem(STORAGE_KEY);
-  if (!saved) return;
+  if (!saved) return false;
   try {
     var local = JSON.parse(saved);
-    if (!isValidData(local)) return;
+    if (!isValidData(local)) return false;
+    var merged = false;
     var dead = {};
     (data.deleted || []).forEach(function(d) { if (d && d.k && d.id) dead[d.k + ':' + d.id] = true; });
     try {
@@ -996,17 +998,18 @@ function mergeLocalAdditions() {
       var ids = {};
       (data[k] || []).forEach(function(x) { ids[x.id] = true; });
       li.forEach(function(it) {
-        if (it.id && !ids[it.id] && !dead[k + ':' + it.id]) { data[k] = data[k] || []; data[k].unshift(it); }
+        if (it.id && !ids[it.id] && !dead[k + ':' + it.id]) { data[k] = data[k] || []; data[k].unshift(it); merged = true; }
       });
     });
     Object.keys(local.likes || {}).forEach(function(g) {
       (local.likes[g] || []).forEach(function(tag) {
         if (!tag.id || dead['likes:' + tag.id]) return;
         var exists = (data.likes[g] || []).some(function(x) { return x.id === tag.id; });
-        if (!exists) { data.likes[g] = data.likes[g] || []; data.likes[g].unshift(tag); }
+        if (!exists) { data.likes[g] = data.likes[g] || []; data.likes[g].unshift(tag); merged = true; }
       });
     });
-  } catch (e) { }
+    return merged;
+  } catch (e) { return false; }
 }
 
 function initNextId() {
