@@ -787,7 +787,22 @@ function renderRiver() {
 });
 (lifeData.places||[]).forEach(function(p) {
   if (!p) return;
-  events.push({ type:'place', title:p.name||'', date:p.sortDate||p.when||'', desc:p.memo||'', sortDate:p.sortDate||p.when||'', sortTime:p._ts || 0 });
+  var pd = p.sortDate || '';
+  if (!pd && p.when) {
+    var wstr = String(p.when);
+    var wy = wstr.match(/(\d{4})/);
+    if (wy) {
+      var wm = wstr.match(/(\d{4})[年.\-\/](\d{1,2})/);
+      if (wm) {
+        pd = wy[1] + '-' + ('0' + wm[2]).slice(-2) + '-01';
+      } else {
+        var sm = wstr.match(/[春夏秋冬]/);
+        var mon = sm ? ({'春':'-03','夏':'-06','秋':'-09','冬':'-12'})[sm[0]] : '-06';
+        pd = wy[1] + mon + '-01';
+      }
+    }
+  }
+  events.push({ type:'place', title:p.name||'', date:pd||p.when||'', desc:p.memo||'', sortDate:pd, sortTime:p._ts || 0 });
 });
 (lifeData.wishes||[]).forEach(function(w) {
   if (!w) return;
