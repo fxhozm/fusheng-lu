@@ -129,27 +129,37 @@
     {
       "id": 6,
       "text": "神经松解术",
-      "done": false
+      "done": false,
+      "sortDate": "2026-09-01",
+      "date": "2026-09-01"
     },
     {
       "id": 1,
       "text": "学一门乐器",
-      "done": false
+      "done": false,
+      "sortDate": "2026-08-15",
+      "date": "2026-08-15"
     },
     {
       "id": 2,
       "text": "写一封寄不出的信",
-      "done": true
+      "done": true,
+      "sortDate": "2026-08-16",
+      "date": "2026-08-16"
     },
     {
       "id": 3,
       "text": "看一次海边日出",
-      "done": false
+      "done": false,
+      "sortDate": "2026-08-18",
+      "date": "2026-08-18"
     },
     {
       "id": 5,
       "text": "养一盆会开花的植物",
-      "done": false
+      "done": false,
+      "sortDate": "2026-08-22",
+      "date": "2026-08-22"
     }
   ],
   "words": [
