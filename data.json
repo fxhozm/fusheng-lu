@@ -134,12 +134,12 @@
     {
       "id": 1,
       "text": "学一门乐器",
-      "done": true
+      "done": false
     },
     {
       "id": 2,
       "text": "写一封寄不出的信",
-      "done": false
+      "done": true
     },
     {
       "id": 3,
