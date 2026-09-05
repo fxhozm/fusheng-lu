@@ -157,16 +157,11 @@
   ],
   "wishes": [
     {
-      "id": 7,
-      "text": "同步测试心愿ABC",
-      "done": false,
-      "date": "2026-09-05",
-      "sortDate": "2026-09-05"
-    },
-    {
       "id": 4,
       "text": "把旧相册整理成电子版",
-      "done": true
+      "done": true,
+      "sortDate": "2026-08-19",
+      "date": "2026-08-19"
     },
     {
       "id": 6,
