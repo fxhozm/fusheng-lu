@@ -949,6 +949,28 @@ var observer = new IntersectionObserver(function(entries) {
   river.querySelectorAll('.node').forEach(function(n) { observer.observe(n); });
 }
 
+function mergeLocalUnsynced() {
+  // 把本机有、云端没有的内容合并回来（防止未同步成功的新增被云端覆盖）
+  try {
+    var saved = localStorage.getItem(STORAGE_KEY);
+    if (!saved) return;
+    var local = JSON.parse(saved);
+    if (!local || typeof local !== 'object') return;
+    var dead = {};
+    (lifeData.deleted || []).forEach(function(d) { if (d && d.k && d.id) dead[d.k + ':' + d.id] = true; });
+    try {
+      JSON.parse(localStorage.getItem('fushengruomeng_deleted') || '[]').forEach(function(d) { if (d && d.k && d.id) dead[d.k + ':' + d.id] = true; });
+    } catch (e) { }
+    ['moments','notes','places','wishes','words'].forEach(function(k) {
+      var ids = {};
+      (lifeData[k] || []).forEach(function(x) { if (x && x.id) ids[x.id] = true; });
+      (local[k] || []).forEach(function(it) {
+        if (it && it.id && !ids[it.id] && !dead[k + ':' + it.id]) { lifeData[k].push(it); }
+      });
+    });
+  } catch (e) { }
+}
+
 renderRiver();
 
 // 异步从云端拉取最新数据，覆盖本地缓存
@@ -971,6 +993,7 @@ renderRiver();
             lifeData.places = lifeData.places || [];
             lifeData.wishes = lifeData.wishes || [];
             lifeData.words = lifeData.words || [];
+            mergeLocalUnsynced();
             renderRiver();
           }
         } catch(e) { }
