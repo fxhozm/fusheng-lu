@@ -893,6 +893,7 @@ var LIKES_GROUPS = [
 
 var STORAGE_KEY = 'fushengruomeng_data';
 var EDIT_KEY = 'fushengruomeng_edit';
+var DEL_KEY = 'fushengruomeng_deleted';
 
 // === GitHub 云同步配置 ===
 var GH_OWNER = 'fxhozm';
@@ -945,6 +946,7 @@ function loadData() {
           if (isValidData(parsed)) {
             data = parsed;
             mergeLocalAdditions();
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
             cloudSyncStatus('云同步');
             initNextId();
             updateCounts();
@@ -977,23 +979,29 @@ function loadData() {
 }
 
 function mergeLocalAdditions() {
-  // 合并本地新增但云端没有的内容，防止未同步时刷新丢失
+  // 合并本地新增但云端没有的内容，防止未同步时刷新丢失；
+  // 已删除的记录（本机墓碑 + 云端墓碑）不会被合并回来
   var saved = localStorage.getItem(STORAGE_KEY);
   if (!saved) return;
   try {
     var local = JSON.parse(saved);
     if (!isValidData(local)) return;
+    var dead = {};
+    (data.deleted || []).forEach(function(d) { if (d && d.k && d.id) dead[d.k + ':' + d.id] = true; });
+    try {
+      JSON.parse(localStorage.getItem(DEL_KEY) || '[]').forEach(function(d) { if (d && d.k && d.id) dead[d.k + ':' + d.id] = true; });
+    } catch (e) { }
     ['moments','notes','places','wishes','words'].forEach(function(k) {
       var li = local[k] || [];
       var ids = {};
       (data[k] || []).forEach(function(x) { ids[x.id] = true; });
       li.forEach(function(it) {
-        if (it.id && !ids[it.id]) { data[k] = data[k] || []; data[k].unshift(it); }
+        if (it.id && !ids[it.id] && !dead[k + ':' + it.id]) { data[k] = data[k] || []; data[k].unshift(it); }
       });
     });
     Object.keys(local.likes || {}).forEach(function(g) {
       (local.likes[g] || []).forEach(function(tag) {
-        if (!tag.id) return;
+        if (!tag.id || dead['likes:' + tag.id]) return;
         var exists = (data.likes[g] || []).some(function(x) { return x.id === tag.id; });
         if (!exists) { data.likes[g] = data.likes[g] || []; data.likes[g].unshift(tag); }
       });
@@ -1453,9 +1461,22 @@ function resetData() {
   else updateCounts();
 }
 
+function recordDeletion(k, id) {
+  try {
+    var dl = JSON.parse(localStorage.getItem(DEL_KEY) || '[]');
+    dl.push({ k: k, id: id, ts: Date.now() });
+    if (dl.length > 500) dl = dl.slice(-500);
+    localStorage.setItem(DEL_KEY, JSON.stringify(dl));
+    data.deleted = data.deleted || [];
+    data.deleted.push({ k: k, id: id, ts: Date.now() });
+    if (data.deleted.length > 500) data.deleted = data.deleted.slice(-500);
+  } catch (e) { }
+}
+
 function deleteItem(type, id) {
   if (!confirm('确定删除？')) return;
   data[type] = data[type].filter(function(x) { return x.id !== id; });
+  recordDeletion(type, id);
   saveData(); rerunCurrent();
 }
 
@@ -1606,6 +1627,7 @@ window.editLikeTag = function(group, id) {
 window.delLikeTag = function(group, id) {
   if (!confirm('确定删除？')) return;
   data.likes[group] = (data.likes[group] || []).filter(function(t) { return t.id !== id; });
+  recordDeletion('likes', id);
   saveData(); rerunCurrent();
 };
 
@@ -1664,7 +1686,7 @@ window.addWish = function() {
   window.__saveWishAdd = function() {
     var text = document.getElementById('f-w-text').value.trim();
     if (!text) { alert('请填写心愿'); return; }
-    data.wishes.unshift({ id: nextID('wishes'), text: text, done: false });
+    data.wishes.unshift({ id: nextID('wishes'), text: text, done: false, date: todayStr(), sortDate: todayStr() });
     saveData(); rerunCurrent();
   };
   setTimeout(function() { var el = document.getElementById('f-w-text'); if (el) el.focus(); }, 50);
